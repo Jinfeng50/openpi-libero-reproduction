@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Data & models
+checkpoints/
+experiments/*/
+!experiments/.gitkeep
+*.ckpt
+*.pt
+*.safetensors
+
+# Logs & cache
+wandb/
+*.log
+.cache/
+__MACOSX/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files
+*.mp4
+*.bag
+*.h5
+*.tfrecord*
