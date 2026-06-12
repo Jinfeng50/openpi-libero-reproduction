@@ -22,7 +22,7 @@
 
 ## ✨ 概述
 
-这是我在 **2026.06–2026.XX** 期间的个人研究项目。目标：
+这是我在 **2026.05–2026.XX** 期间的个人研究项目。目标：
 
 1. **完整复现** Physical Intelligence 开源的 π0.5（PaliGemma + Flow Matching）VLA 模型在 LIBERO 仿真 benchmark 上的训练与评测全链路。
 2. **差异化贡献**：参考 PointVLA 的"晚期融合"设计，把 DROID 真实立体相机深度数据生成的点云特征注入 π0.5 的 action expert，在 OOD 鲁棒性场景下提升模型表现。
@@ -38,12 +38,12 @@
 
 | 方法 | 配置 | GPU | Spatial | Object | Goal | Long-10 | 平均 |
 |---|---|---|:-:|:-:|:-:|:-:|:-:|
-| π0.5 官方 ckpt¹ | — | 1×4090 | 99.0% | 97.0% | 98.0% | 94.0% | **97.0%** |
-| **本仓库 Full FT** | 30k step, batch 256 | 8×A800 | XX% | XX% | XX% | XX% | **XX%** |
+| π0.5 官方 ckpt¹ | official 30k ckpt | A800 eval | 98.2% | 98.8% | 96.8% | 92.6% | **96.6%** |
+| **本仓库 Full FT** | 30k step, batch 256 | 2×A800 | 98.4% | 98.4% | 96.8% | 91.8% | **96.35%** |
 | 本仓库 LoRA | 30k step, batch 32 | 1×4090 | XX% | XX% | XX% | XX% | XX% |
 | **+ 多模态融合（我们）** | + point encoder | 8×A800 | XX% | XX% | XX% | XX% | **XX%** |
 
-¹ 数字来源：Physical Intelligence 官方 [π0.5 blog](https://www.pi.website/blog/pi05)；每个 task 50 episode。
+¹ 数字为本仓库按 openpi 官方协议复现官方 checkpoint 的结果；Physical Intelligence 报告值约为 Spatial 98.8%、Object 98.2%、Goal 98.0%、Long-10 92.4%。
 ² 本仓库所有数字均为 50 episode × 10 task = 500 次 rollout 的统计结果。
 
 完整结果（含训练曲线、ablation、failure 分析）见 [📁 docs/results.md](docs/results.md)。
@@ -264,8 +264,8 @@ openpi-libero-reproduction/
 
 ## 📮 联系作者
 
-- 👤 [你的中文名] / [English name]
-- 🏫 [学校名] [学院] 研究生在读（具身智能方向）
+- 👤 Chen Jinfeng
+- 🏫 电子科技大学 信息与通信工程学院 研究生在读
 - 📧 your.email@xxx.edu.cn
 - 🌐 [个人主页 / 知乎 / 博客]()
 - 💬 欢迎讨论 VLA、多模态融合、具身智能任何话题

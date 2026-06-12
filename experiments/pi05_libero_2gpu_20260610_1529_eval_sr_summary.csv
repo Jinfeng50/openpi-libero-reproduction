@@ -1,0 +1,5 @@
+suite,total_success_rate,total_episodes
+libero_spatial,0.984,500
+libero_object,0.984,500
+libero_goal,0.968,500
+libero_10,0.918,500

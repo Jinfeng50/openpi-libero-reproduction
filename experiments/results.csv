@@ -1,0 +1,7 @@
+date,exp_name,eval_run_id,checkpoint,spatial,object,goal,libero_10,average,episodes_per_suite,total_episodes
+2026-06-12,pi05_libero_2gpu_20260610_1529,post_train_eval_20260612_1120,/cfsdata/chenjinfeng/projects/openpi/checkpoints/pi05_libero/pi05_libero_2gpu_20260610_1529/29999,0.984,0.984,0.968,0.918,0.9635,500,2000
+suite,total_success_rate,total_episodes
+libero_spatial,0.984,500
+libero_object,0.984,500
+libero_goal,0.968,500
+libero_10,0.918,500
