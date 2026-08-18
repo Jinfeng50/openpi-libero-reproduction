@@ -1,7 +1,7 @@
 # π0.5 复现微调 + GitHub 开源全链路指南（A800 版）
 
 > 作者：chenjinfeng
-> 项目：基于 openpi 的 π0.5 LIBERO 复现 + 多模态融合（占位中）
+> 项目：基于 openpi 的 pi0.5 LIBERO 复现 + DGTE 时序动作融合
 > 硬件：8×A800-80GB 共享服务器，日常主用 1-2 卡
 > 适用：从 0 到秋招简历落地的全过程
 > 最后更新：2026-05
@@ -19,6 +19,33 @@
 | **run_full_pipeline.sh** | 一键脚本 | 跑实验时 | ✅ |
 | **README.md** | 对外门面 | 有结果后才打磨 | ✅ |
 | **LEARNING_LOG.md** | 私人记录 | 每天 5 分钟填 | ❌ |
+
+---
+
+## 0.1 日志保存约定
+
+所有长命令都必须留日志。统一放到个人项目的 `experiments/<RUN_ID>/logs/` 下：
+
+```bash
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=<阶段名>_$(date +%Y%m%d_%H%M)
+export EXP_DIR=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EXP_DIR/logs"
+```
+
+运行命令时统一使用：
+
+```bash
+some_command 2>&1 | tee "$EXP_DIR/logs/<stage>.log"
+```
+
+如果是训练这种长任务，日志文件名至少包含阶段和实验名，例如：
+
+```text
+experiments/pi05_libero_2gpu_20260610_1500/logs/02_train.log
+```
+
+这样以后回查时可以直接从 `experiments/` 知道：跑了什么、什么时候跑的、命令输出是什么、失败在哪里。
 
 ---
 
@@ -61,7 +88,7 @@ chmod 600 ~/.ssh/config
 
 ssh -T git@github.com
 # 第一次问 yes/no 输入 yes
-# 看到 "Hi yourname!" 就成功
+# 看到 "Hi Jinfeng50!" 就成功
 ```
 
 ### 1.4 git 配置
@@ -173,7 +200,7 @@ git add .
 git commit -m "Initial commit: project scaffold with RUNBOOK and pipeline script"
 
 # 推 GitHub
-git remote add origin git@github.com:yourname/openpi-libero-reproduction.git
+git remote add origin git@github.com:Jinfeng50/openpi-libero-reproduction.git
 git branch -M main
 git push -u origin main
 ```
@@ -182,7 +209,7 @@ git push -u origin main
 
 ```bash
 cd /cfsdata/chenjinfeng/projects
-mkdir yourname && cd yourname  # 替换成你的 GitHub 用户名
+mkdir Jinfeng50 && cd Jinfeng50
 
 cat > README.md <<'EOF'
 ### Hi, I'm [你的中文名] 👋
@@ -191,7 +218,7 @@ CS MS student working on **embodied AI** / **vision-language-action models**.
 
 🔬 **Current focus**: Reproducing π0.5 on LIBERO + exploring multimodal fusion.
 
-📌 **Pinned**: [openpi-libero-reproduction](https://github.com/yourname/openpi-libero-reproduction)
+📌 **Pinned**: [openpi-libero-reproduction](https://github.com/Jinfeng50/openpi-libero-reproduction)
 
 📝 **Recent posts**:
 - [CLIP 深度解读：当一张图遇见一万个标签](https://...)
@@ -200,7 +227,7 @@ CS MS student working on **embodied AI** / **vision-language-action models**.
 EOF
 
 git init && git add . && git commit -m "Add profile README"
-git remote add origin git@github.com:yourname/yourname.git
+git remote add origin git@github.com:Jinfeng50/Jinfeng50.git
 git branch -M main
 git push -u origin main
 ```
@@ -304,13 +331,13 @@ git push
 ### 3.3 LEARNING_LOG entry
 
 ```markdown
-### 2026-XX-XX (Day 1)
+### 2026-05-17 (Day 1)
 **做了什么**：
 - openpi 环境跑通，submodule init，本地权重软链。
 - 第一个 GitHub repo openpi-libero-reproduction 公开。
 - A800 集群 GPU 状态摸清楚：日常能稳定用 1-2 张。
 **学到**：openpi 用 policy server + client 架构，websocket 通信。
-**明天**：开始 Phase B 下 pi05_libero 做 baseline 对照。
+**后续**：官方 checkpoint baseline 已完成，继续维护训练复现和 DGTE 配对评测。
 ```
 
 ### 3.4 Phase A 验收
@@ -372,20 +399,26 @@ openpi 官方 README 里可对比的数字来自 `examples/libero/README.md`：
 
 ```bash
 cd /cfsdata/chenjinfeng/projects/openpi
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=baseline_precheck_$(date +%Y%m%d_%H%M)
+export EXP_DIR=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EXP_DIR/logs"
 
 # 1. 确认官方 ckpt 本地存在
-ls -lah /cfsdata/chenjinfeng/models/openpi/pi05_libero
-ls -lah /cfsdata/chenjinfeng/openpi_cache/openpi-assets/checkpoints/pi05_libero
+{
+    ls -lah /cfsdata/chenjinfeng/models/openpi/pi05_libero
+    ls -lah /cfsdata/chenjinfeng/openpi_cache/openpi-assets/checkpoints/pi05_libero
+} 2>&1 | tee "$EXP_DIR/logs/01_checkpoint_paths.log"
 
 # 2. 确认环境关键包
-uv run python - <<'PY'
+uv run python - <<'PY' 2>&1 | tee "$EXP_DIR/logs/02_python_env.log"
 import transformers
 print("transformers:", transformers.__version__)
 assert transformers.__version__ == "4.53.2"
 PY
 
 # 3. 确认 config 能加载
-uv run python - <<'PY'
+uv run python - <<'PY' 2>&1 | tee "$EXP_DIR/logs/03_config.log"
 from openpi.training import config as C
 cfg = C.get_config("pi05_libero")
 print("weight_loader:", cfg.weight_loader)
@@ -405,6 +438,10 @@ tmux 里执行：
 
 ```bash
 cd /cfsdata/chenjinfeng/projects/openpi
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=baseline_server_$(date +%Y%m%d_%H%M)
+export EXP_DIR=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EXP_DIR/logs"
 
 export OPENPI_DATA_HOME=/cfsdata/chenjinfeng/openpi_cache
 export HF_HOME=/cfsdata/chenjinfeng/hf_cache
@@ -418,7 +455,8 @@ CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py \
     --port=8001 \
     policy:checkpoint \
     --policy.config=pi05_libero \
-    --policy.dir=/cfsdata/chenjinfeng/models/openpi/pi05_libero
+    --policy.dir=/cfsdata/chenjinfeng/models/openpi/pi05_libero \
+    2>&1 | tee "$EXP_DIR/logs/serve_policy.log"
 ```
 
 看到 server 开始监听后，按 `Ctrl+B` 再按 `D` 退出 tmux。
@@ -592,12 +630,55 @@ git push
 
 详见 `RUNBOOK.md` §7。
 
+`compute_norm_stats.py` 不是训练模型，而是在为“从 `pi05_base` 微调到 LIBERO”准备 state/action 的归一化统计量。可以把 `norm_stats` 理解成这个机器人数据集的“单位和尺度校准表”。
+
+为什么需要它：
+
+- LIBERO 的状态和动作维度尺度不同。末端位置可能是米制小数，姿态可能在 `-3` 到 `3`，夹爪动作又接近离散开合。
+- 如果直接训练，数值范围大的维度会主导 loss，数值范围小但控制上很重要的维度可能学不好。
+- 归一化会把不同维度转换到更接近的尺度，让优化更稳定。
+- π0.5 是通用 VLA 架构，不同机器人和数据集的动作空间不同；`norm_stats` 告诉模型“当前这个数据集的 state/action 大概长什么样”。
+
+两个场景一定要分清：
+
+| 场景 | norm_stats 用法 |
+|---|---|
+| 评测官方 `pi05_libero` checkpoint | 用 checkpoint 自带的 norm_stats，不要重新算 |
+| 从 `pi05_base` 微调到 LIBERO | 先对 LIBERO 训练数据计算 norm_stats，再训练 |
+
+如果把这两种混用，动作反归一化会错，评测成功率可能直接崩掉。
+
 ```bash
 cd /cfsdata/chenjinfeng/projects/openpi
-CUDA_VISIBLE_DEVICES=5 uv run scripts/compute_norm_stats.py --config-name pi05_libero
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=norm_stats_pi05_libero_$(date +%Y%m%d_%H%M)
+export EXP_DIR=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EXP_DIR/logs"
+
+CUDA_VISIBLE_DEVICES=0 uv run scripts/compute_norm_stats.py --config-name pi05_libero \
+    2>&1 | tee "$EXP_DIR/logs/compute_norm_stats.log"
+
+ls -lah /cfsdata/chenjinfeng/projects/openpi/assets/pi05_libero/physical-intelligence/libero/norm_stats.json \
+    2>&1 | tee "$EXP_DIR/logs/norm_stats_file.log"
 ```
 
 ### 5.2 Git
+
+5.1 已经生成：
+
+```text
+/cfsdata/chenjinfeng/projects/openpi/assets/pi05_libero/physical-intelligence/libero/norm_stats.json
+```
+
+当前 LIBERO 数据规模：
+
+```text
+frames:   273465
+episodes: 1693
+features: actions, state, image, wrist_image, task_index, episode_index, frame_index, timestamp, index
+```
+
+把这些真实信息写入 `docs/data.md`，不要再保留 `XX episodes / XX frames` 这种占位。
 
 ```bash
 cd ~/projects/openpi-libero-reproduction
@@ -608,12 +689,20 @@ cat > docs/data.md <<'EOF'
 ## LIBERO
 - Path: `/cfsdata/chenjinfeng/datasets/libero` (linked to `physical-intelligence/libero`)
 - Format: LeRobotDataset
-- Stats: XX episodes, XX frames, action_dim=7
+- Stats: 1693 episodes, 273465 frames, action_dim=7
+- Features: actions, state, image, wrist_image, task_index, episode_index, frame_index, timestamp, index
+
+## Generated norm_stats
+- Path: `/cfsdata/chenjinfeng/projects/openpi/assets/pi05_libero/physical-intelligence/libero/norm_stats.json`
+- Contains: state/actions mean, std, q01, q99
+- State stats dim: 8
+- Action stats dim: 7
 
 ## norm_stats Strategy
-- From base fine-tuning: use freshly computed via `compute_norm_stats.py`
-- For evaluating official ckpt: use bundled norm_stats
-- ⚠️ Mixing collapses SR to <5%
+- Purpose: normalize LIBERO state/action dimensions so training sees stable numeric scales.
+- From base fine-tuning (`pi05_base` → LIBERO): use freshly computed stats from `compute_norm_stats.py`.
+- Evaluating official `pi05_libero` checkpoint: use checkpoint-bundled stats.
+- Never mix these two cases; wrong stats distort action denormalization and can collapse SR.
 EOF
 
 git add docs/data.md
@@ -623,87 +712,220 @@ git push
 
 ---
 
-## Part 6：Phase D — 从 base 全量微调（Week 2，主力工作）
+## Part 6：Phase D — 2×A800 从 base 全量微调（Week 2，主力工作）
 
-**核心阶段**：1 卡或 2 卡，全量微调 pi05_base → LIBERO，30k step。
+**核心阶段**：用 2×A800 全量微调 `pi05_base → LIBERO`，30k step。A800 单卡 80GB 已经能放下 pi0.5，2 卡将 global batch 从 32 提到 64。本次真实墙钟时间约 28.4 小时（含最终 checkpoint 保存），后续排期应以实测而不是早期 16-20 小时估计为准。
 
 ### 6.1 技术
 
-详见 `RUNBOOK.md` §8。最常用：
+详见 `RUNBOOK.md` §8。当前默认按 2 卡跑。
+
+先选两张空卡，优先同 NUMA 组，例如 `(4,5)` 或 `(6,7)`：
+
+```bash
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=gpu_check_$(date +%Y%m%d_%H%M)
+export EXP_DIR=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EXP_DIR/logs"
+
+nvidia-smi --query-gpu=index,memory.free,utilization.gpu --format=csv,noheader,nounits \
+    | sort -k2 -t',' -rn \
+    | tee "$EXP_DIR/logs/gpu_status.log"
+```
+
+判定标准：两张卡最好都 `memory.free > 75000 MiB`。
+
+手动训练命令：
 
 ```bash
 cd /cfsdata/chenjinfeng/projects/openpi
-tmux new -s train
+tmux new -s train_pi05_libero_2gpu
 
-# tmux 内（假设 GPU 5 空闲）
-export EXP_NAME=pi05_libero_1gpu_$(date +%Y%m%d_%H%M)
-CUDA_VISIBLE_DEVICES=5 \
+# tmux 内：假设 GPU 4,5 空闲；如果空的是 6,7，就改成 CUDA_VISIBLE_DEVICES=6,7
+export EXP_NAME=pi05_libero_2gpu_$(date +%Y%m%d_%H%M)
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export EXP_DIR=$PERSONAL_DIR/experiments/$EXP_NAME
+mkdir -p "$EXP_DIR/logs"
+
+CUDA_VISIBLE_DEVICES=4,5 \
 XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
 uv run scripts/train.py pi05_libero \
-    --exp-name=$EXP_NAME --overwrite \
-    --batch-size 32 --num-train-steps 30000 --save-interval 5000
+    --exp-name=$EXP_NAME \
+    --overwrite \
+    --fsdp-devices 2 \
+    --batch-size 64 \
+    --num-train-steps 30000 \
+    --save-interval 5000 \
+    2>&1 | tee "$EXP_DIR/logs/02_train.log"
 
 # Ctrl+B D 离开
 ```
 
-或者用一键脚本：
+如果训练中断，使用同一个 `EXP_NAME` 续训：
 
 ```bash
-cd ~/projects/openpi-libero-reproduction
-./scripts/run_full_pipeline.sh v1 1   # 1 卡 v1
+cd /cfsdata/chenjinfeng/projects/openpi
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export EXP_DIR=$PERSONAL_DIR/experiments/$EXP_NAME
+mkdir -p "$EXP_DIR/logs"
+
+CUDA_VISIBLE_DEVICES=4,5 \
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 \
+uv run scripts/train.py pi05_libero \
+    --exp-name=$EXP_NAME \
+    --resume \
+    --fsdp-devices 2 \
+    2>&1 | tee -a "$EXP_DIR/logs/02_train_resume.log"
+```
+
+或者用一键脚本。这个脚本会自动选两张空卡，batch 默认 64：
+
+```bash
+cd /cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export EXP_NAME=pi05_libero_2gpu_v1_$(date +%Y%m%d_%H%M)
+mkdir -p "experiments/$EXP_NAME/logs"
+./scripts/run_full_pipeline.sh v1 2 \
+    2>&1 | tee "experiments/$EXP_NAME/logs/run_full_pipeline.log"
+```
+
+如果要手动指定 GPU：
+
+```bash
+cd /cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export EXP_NAME=pi05_libero_2gpu_v1_manual_$(date +%Y%m%d_%H%M)
+mkdir -p "experiments/$EXP_NAME/logs"
+GPU_IDS=4,5 ./scripts/run_full_pipeline.sh v1 2 \
+    2>&1 | tee "experiments/$EXP_NAME/logs/run_full_pipeline.log"
 ```
 
 ### 6.2 Git 动作（训练过程中并行做）
 
-训练 30+ 小时不是空等，**用这时间做**：
+本次训练实测约 28.4 小时。训练期间可同步整理实验记录：
 
 ```bash
 cd ~/projects/openpi-libero-reproduction
+export EXP_DIR=${EXP_DIR:-/cfsdata/chenjinfeng/projects/openpi-libero-reproduction/experiments/manual_docs_$(date +%Y%m%d_%H%M)}
+mkdir -p "$EXP_DIR/logs"
 
-# 写 docs/method.md 占位（基础复现部分）
-cat > docs/method.md <<'EOF'
-# Method
+# 更新 docs/method.md 中的真实配置和墙钟时间，不写占位结果
 
-## Stage 1: Base Reproduction (current)
-- Backbone: PaliGemma 3B (frozen during loading, all params updated during FT)
-- Action expert: π0.5 flow matching head
-- Training: 30k steps, batch=32, lr=2.5e-5, AdamW, bf16, single A800
+git add docs/method.md 2>&1 | tee "$EXP_DIR/logs/git_add_method.log"
+git commit -m "docs: stub method documentation" 2>&1 | tee "$EXP_DIR/logs/git_commit_method.log"
 
-## Stage 2: Multimodal Fusion (planned, TBD)
-- Direction TBD pending Stage 1 results
-- Candidates: PointVLA late fusion / DepthVLA MoT / radar-VLA
-EOF
-
-git add docs/method.md
-git commit -m "docs: stub method documentation"
-
-# 训练曲线截图保存
-# 每天截一次 wandb，存到 docs/figures/train_loss_dayN.png
-git add docs/figures/
-git commit -m "docs: add training curve snapshot day 1"
-git push
+# WandB 截图保存
+# 具体截图清单见 docs/wandb.md。最低要求：
+# - docs/figures/wandb_run_overview_2gpu.png
+# - docs/figures/train_loss_2gpu_30k.png
+# - docs/figures/grad_norm_2gpu_30k.png
+git add docs/figures/ 2>&1 | tee "$EXP_DIR/logs/git_add_figures.log"
+git commit -m "docs: add training curve snapshot day 1" 2>&1 | tee "$EXP_DIR/logs/git_commit_figures.log"
+git push 2>&1 | tee "$EXP_DIR/logs/git_push.log"
 ```
 
-### 6.3 训练结束后
+### 6.3 跑你的官方协议评测
 
 ```bash
-# 把评测结果 csv 拷进个人项目
-cp /cfsdata/chenjinfeng/projects/openpi/experiments/$EXP_NAME/sr_summary.csv \
-   ~/projects/openpi-libero-reproduction/experiments/
+cd /cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export RUN_ID=post_train_eval_$(date +%Y%m%d_%H%M)
+export EVAL_RESULTS=$PERSONAL_DIR/experiments/$RUN_ID
+mkdir -p "$EVAL_RESULTS" "$EVAL_RESULTS/logs"
 
-cat experiments/sr_summary.csv >> experiments/results.csv
+cd /cfsdata/chenjinfeng/projects/openpi/examples/libero
 
-# 更新 README 主表格的 "Mine" 行
-# 编辑 README.md
-git add README.md experiments/results.csv experiments/sr_summary.csv
-git commit -m "exp: 1×A800 full FT 30k step, avg SR=XX% (Spatial/Object/Goal/Long)"
-git push
+export OPENPI_DATA_HOME=/cfsdata/chenjinfeng/openpi_cache
+export HF_HOME=/cfsdata/chenjinfeng/hf_cache
+export HF_LEROBOT_HOME=/cfsdata/chenjinfeng/datasets
+export TMPDIR=/cfsdata/chenjinfeng/tmp
+export MUJOCO_GL=egl
+export PYTHONPATH=/cfsdata/chenjinfeng/projects/LIBERO:$PYTHONPATH
+
+for SUITE in libero_spatial libero_object libero_goal libero_10
+do
+    echo "=== Evaluating $SUITE on your checkpoint ==="
+    uv run main.py \
+        --args.task-suite-name "$SUITE" \
+        --args.host=localhost \
+        --args.port=8001 \
+        --args.video-out-path "$EVAL_RESULTS/videos/$SUITE" \
+        2>&1 | tee "$EVAL_RESULTS/logs/eval_${SUITE}.log"
+done
+
+echo "suite,total_success_rate,total_episodes" > "$EVAL_RESULTS/sr_summary.csv"
+for SUITE in libero_spatial libero_object libero_goal libero_10
+do
+    LOG="$EVAL_RESULTS/logs/eval_${SUITE}.log"
+    SR=$(grep "Total success rate:" "$LOG" | tail -1 | awk '{print $NF}')
+    EP=$(grep "Total episodes:" "$LOG" | tail -1 | awk '{print $NF}')
+    echo "$SUITE,$SR,$EP" >> "$EVAL_RESULTS/sr_summary.csv"
+done
+
+cat "$EVAL_RESULTS/sr_summary.csv" | tee "$EVAL_RESULTS/logs/sr_summary.log"
 ```
 
-### 6.4 发 Release v0.1
+### 6.4 归档你的评测结果
+
+本次 2×A800 full fine-tune 已完成一组官方协议评测：
+
+- Training run: `pi05_libero_2gpu_20260610_1529`
+- Checkpoint: `/cfsdata/chenjinfeng/projects/openpi/checkpoints/pi05_libero/pi05_libero_2gpu_20260610_1529/29999`
+- Eval run: `/cfsdata/chenjinfeng/projects/openpi-libero-reproduction/experiments/post_train_eval_20260612_1120`
+- Protocol: 50 episodes/task × 10 tasks/suite = 500 episodes/suite
+
+| Suite | Success rate | Episodes |
+|---|---:|---:|
+| libero_spatial | 0.984 | 500 |
+| libero_object | 0.984 | 500 |
+| libero_goal | 0.968 | 500 |
+| libero_10 | 0.918 | 500 |
+| **Average** | **0.9635** | **2000** |
+
+`EGL_NOT_INITIALIZED` appeared after `Total success rate` / `Total episodes` were printed, during robosuite EGL cleanup. Treat this as a cleanup warning, not an invalid evaluation. `WARNING: Nan, Inf or huge value in QACC` appeared once at shutdown in the final log; the suite still completed all 500 episodes and printed the final rate.
 
 ```bash
-git tag -a v0.1.0-base-reproduction -m "π0.5 base reproduction complete on 1×A800"
+cd /cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export PERSONAL_DIR=/cfsdata/chenjinfeng/projects/openpi-libero-reproduction
+export EXP_DIR=${EXP_DIR:-$PERSONAL_DIR/experiments/post_train_$(date +%Y%m%d_%H%M)}
+mkdir -p "$EXP_DIR/logs"
+
+export EXP_NAME=pi05_libero_2gpu_20260610_1529
+export EVAL_RUN_ID=post_train_eval_20260612_1120
+export EVAL_RESULTS=$PERSONAL_DIR/experiments/$EVAL_RUN_ID
+
+if [ ! -f "$EVAL_RESULTS/sr_summary.csv" ]; then
+    echo "Missing $EVAL_RESULTS/sr_summary.csv"
+    echo "Please run 6.3 first."
+    exit 1
+fi
+
+cp "$EVAL_RESULTS/sr_summary.csv" \
+   "$PERSONAL_DIR/experiments/${EXP_NAME}_eval_sr_summary.csv" \
+   2>&1 | tee "$EXP_DIR/logs/archive_sr_summary.log"
+
+cat "$PERSONAL_DIR/experiments/${EXP_NAME}_eval_sr_summary.csv" \
+    >> "$PERSONAL_DIR/experiments/results.csv" \
+    2>> "$EXP_DIR/logs/append_results.log"
+
+git add README.md "$PERSONAL_DIR/experiments/results.csv" \
+    "$PERSONAL_DIR/experiments/${EXP_NAME}_eval_sr_summary.csv" \
+    2>&1 | tee "$EXP_DIR/logs/git_add_results.log"
+git commit -m "exp: 2xA800 full FT 30k step, avg SR=96.35%" 2>&1 | tee "$EXP_DIR/logs/git_commit_results.log"
+git push 2>&1 | tee "$EXP_DIR/logs/git_push_results.log"
+```
+
+### 6.5 官方 baseline 归档（可选）
+
+如果你只是想把**官方 baseline**复制一份留档，单独用下面这条：
+
+```bash
+cp /cfsdata/chenjinfeng/projects/openpi-libero-reproduction/experiments/baseline_official_50ep_20260607_1246/sr_summary.csv \
+   /cfsdata/chenjinfeng/projects/openpi-libero-reproduction/experiments/baseline_official_50ep_20260607_1246/sr_summary_copy.csv
+```
+
+### 6.6 发 Release v0.1
+
+```bash
+git tag -a v0.1.0-base-reproduction -m "π0.5 base reproduction complete on 2×A800"
 git push origin v0.1.0-base-reproduction
 ```
 
@@ -713,41 +935,42 @@ GitHub 网页 Releases → Draft → 选 tag → 写 release notes：
 ## v0.1.0 — π0.5 Base Reproduction ✅
 
 First milestone: full reproduction of π0.5 from pre-trained base to LIBERO
-benchmark on a single A800 in a shared cluster.
+benchmark on 2×A800 in a shared cluster.
 
 ### Results
 | Suite | Official ckpt (my reprod.) | My fine-tune | PI report |
 |---|:-:|:-:|:-:|
-| Spatial | XX% | XX% | 99% |
-| Object | XX% | XX% | 97% |
-| Goal | XX% | XX% | 98% |
-| Long-10 | XX% | XX% | 94% |
+| Spatial | 98.2% | 98.4% | 98.8% |
+| Object | 98.8% | 98.4% | 98.2% |
+| Goal | 96.8% | 96.8% | 98.0% |
+| Long-10 | 92.6% | 91.8% | 92.4% |
 
 ### Highlights
-- ✅ Single-GPU full fine-tuning (no LoRA needed thanks to 80GB A800)
+- ✅ 2×A800 full fine-tuning with FSDP (no LoRA)
 - ✅ Solved norm_stats compatibility issue
 - ✅ Solved offline weight download via HTTPS
-- ⏱️ Total training: ~XX hours
+- Total training: ~28.4 hours including final checkpoint save
 
 ### Resources
-- 📊 wandb: [link]
-- 📝 blog: [link]
+- 📊 wandb: https://wandb.ai/3267189544-uestc/openpi/runs/hwdxnlvn
+- 📝 blog: not published yet
 - 📁 detailed report: [docs/baseline.md](docs/baseline.md)
 ```
 
-### 6.5 第二篇博客
+### 6.7 第二篇博客
 
 主题：**"openpi 微调踩坑实录：从 norm_stats 到外网受限下的权重分发"**
 
 工程类博客高流量，对求职帮助大。
 
-### 6.6 Phase D 验收
+### 6.8 Phase D 验收
 
-- [x] 至少一组 30k step 训练完成
-- [x] 评测 SR 出来，README 更新
-- [x] Release v0.1.0 发布
-- [x] 第二篇博客发布
-- [x] GitHub 累计 ≥25 commit
+- [x] 一组 2×A800 30k step 训练完成
+- [x] 微调 checkpoint 完成 50ep/task 正式评测
+- [x] README 主表格更新 2×A800 微调结果
+- [x] `v0.1.0-base-reproduction` tag 已推送
+- [ ] GitHub Release 页面发布（tag 已存在）
+- [ ] 第二篇博客发布
 
 ---
 
@@ -757,95 +980,71 @@ benchmark on a single A800 in a shared cluster.
 
 详见 `RUNBOOK.md` §9-§10。50 episode 正式评测 + 三方对比图 + demo 视频。
 
+WandB 截图要求见 `docs/wandb.md`。训练过程用 WandB 截图证明，最终 SR 用 eval log / `sr_summary.csv` 证明。
+
 ### 7.2 Git 动作
 
 ```bash
 cd ~/projects/openpi-libero-reproduction
+export EXP_DIR=${EXP_DIR:-/cfsdata/chenjinfeng/projects/openpi-libero-reproduction/experiments/visualize_$(date +%Y%m%d_%H%M)}
+mkdir -p "$EXP_DIR/logs"
 
-# 跑可视化脚本
-uv run python scripts/plot_sr.py    # 三方对比
+# 跑可视化脚本（使用已归档的真实结果）
+uv run python scripts/plot_results.py 2>&1 | tee "$EXP_DIR/logs/plot_results.log"
 
 # 挑 demo 视频
 mkdir -p docs/demos
 cp /cfsdata/chenjinfeng/datasets/eval_videos/$EXP_NAME/libero_10/task_0_seed_0.mp4 \
-   docs/demos/long_success.mp4
+   docs/demos/long_success.mp4 \
+   2>&1 | tee "$EXP_DIR/logs/copy_demo.log"
 # ≤50MB 的进 repo，>50MB 的上 HuggingFace
 
 # Hero GIF for README
 ffmpeg -i docs/demos/long_success.mp4 \
     -vf "fps=10,scale=480:-1:flags=lanczos" \
-    -loop 0 docs/demo.gif
+    -loop 0 docs/demo.gif \
+    2>&1 | tee "$EXP_DIR/logs/ffmpeg_demo_gif.log"
 
-git add docs/figures/ docs/demos/ docs/demo.gif README.md
-git commit -m "docs: add 3-way SR comparison, demo videos, hero GIF"
-git push
+git add docs/figures/ docs/demos/ docs/demo.gif README.md 2>&1 | tee "$EXP_DIR/logs/git_add_visuals.log"
+git commit -m "docs: add 3-way SR comparison, demo videos, hero GIF" 2>&1 | tee "$EXP_DIR/logs/git_commit_visuals.log"
+git push 2>&1 | tee "$EXP_DIR/logs/git_push_visuals.log"
 ```
 
 ### 7.3 第三篇博客
 
-主题：**"在 A800 单卡上跑出 SR 90+：π0.5 LIBERO 微调全记录"**
+主题：**"2×A800 跑通 π0.5 LIBERO 全量微调：从 baseline 到自己的 checkpoint"**
 
 综合性总结博客，可以做简历附件链接。
 
 ---
 
-## Part 8：Phase F — 多模态融合方向决策（M3 起）
+## Part 8：Phase F — DGTE 推理创新与配对评测
 
-**注意**：到这一步要先**停下来评估**，再决定具体方向。
+本阶段选择训练免费的 DGTE（Disagreement-Gated Temporal Ensemble）作为第一个可验证创新。原因是它直接利用 pi0.5 已输出但被客户端丢弃的重叠 action chunk，不改 checkpoint，不引入尚未具备的深度/点云数据，也能做严格的同模型 A/B。
 
-### 8.1 评估问题
+### 8.1 已实现
 
-跑完 Phase D + E 后，问自己：
+- `src/openpi_libero_reproduction/temporal_ensemble.py`：时序对齐、freshness weighting、分歧门控、夹爪离散保护。
+- `scripts/eval_libero_temporal.py`：同一 LIBERO client 支持 `baseline` / `dgte`。
+- `scripts/run_temporal_ablation.sh`：同一个 server 和 checkpoint 下依次跑两种 controller。
+- `tests/test_temporal_ensemble.py`：CPU 单元测试。
 
-1. 我对 π0.5 架构哪一部分最熟？（PaliGemma / action expert / data pipeline）
-2. 哪个失败模式最让我抓狂？（空间感差 / 长程任务 / 物体识别错）
-3. 导师的雷达方向哪部分能复用？（多模态融合数学 / 标定 / encoder 设计）
-4. 我手上的数据集（DROID 自带 depth、aloha_pen_uncap 等）适合哪个方向？
-
-### 8.2 候选方案（已研究过）
-
-| 方案 | 难度 | 显存 | 数据需求 | 论文风险 |
-|---|---|---|---|---|
-| PointVLA 风格晚期融合 | 低 | 中（+10%） | 小（百条 demo） | 中（已发表，跟进型工作） |
-| DepthVLA 风格 MoT | 中 | 大（+30%） | 中 | 中（去年很热） |
-| 雷达 → voxel → 同 encoder（自创） | 高 | 中 | 雷达数据需自采 | 高，但**强差异化** |
-
-### 8.3 占位 docs
+### 8.2 评测命令
 
 ```bash
-cd ~/projects/openpi-libero-reproduction
+cd /cfsdata/chenjinfeng/projects/openpi-libero-reproduction
 
-cat > docs/multimodal_plan.md <<'EOF'
-# Multimodal Fusion Plan (TBD)
-
-## Status
-Phase D/E complete. Now evaluating direction.
-
-## Candidates
-1. PointVLA-style late fusion (point cloud → action expert via zero-init adapter)
-2. DepthVLA-style MoT (depth expert + VLM + action expert shared attention)
-3. Radar-VLA (advisor's direction, novel)
-
-## Decision Criteria
-- Compute fit (1-2 A800 capacity)
-- Data accessibility (DROID has stereo depth, no real radar data)
-- Novelty / paper-ability
-- Advisor synergy
-
-## Decision: TBD by 2026-XX-XX
-EOF
-
-git add docs/multimodal_plan.md
-git commit -m "docs: stub multimodal fusion direction evaluation"
-git push
+EXP_NAME=pi05_libero_2gpu_20260610_1529 \
+GPU_ID=<空闲卡> \
+N_EPISODES_PER_TASK=10 \
+./scripts/run_temporal_ablation.sh
 ```
 
-后续真正开干的时候，开 feature branch：
+10 episode/task 只用于 smoke test。正式表格必须用 `N_EPISODES_PER_TASK=50`，并同时跑完四个 suite。GPU 忙时保持结果为 `pending`，不能用假设提升填表。
 
-```bash
-git checkout -b feat/multimodal-<方向名>
-# ...
-```
+### 8.3 后续多模态方向
+
+点云/深度/雷达融合保留为更长期研究方向，但必须在数据、标定和计算资源就绪后单独立项。当前仓库不宣称尚未实现的多模态结果。
 
 ---
 
@@ -853,12 +1052,10 @@ git checkout -b feat/multimodal-<方向名>
 
 | 里程碑 | Tag | 何时发 | 内容 |
 |---|---|---|---|
-| `v0.1.0-base-reproduction` | Phase D 末 | 1×A800 full FT 跑出 SR | 第一个里程碑 |
-| `v0.2.0-eval-complete` | Phase E 末 | 50 episode 正式评测 + 视频 | 报告级数字 |
-| `v0.3.0-multimodal-design` | Phase F 决策后 | 方向定下，docs/method.md 完整 | 设计稿 |
-| `v0.4.0-multimodal-prototype` | M4 中 | 多模态分支跑通 | 第一组多模态数字 |
-| `v1.0.0-multimodal` | M5 末 | 完整 ablation | 论文级结果 |
-| `v1.1.0-paper-arxiv` | M6 | arxiv 上线 | 加 paper 链接 |
+| `v0.1.0-base-reproduction` | Phase D 末 | 2×A800 full FT 跑出 SR | 第一个里程碑 |
+| `v0.2.0-dgte` | Phase F 末 | DGTE 50 episode 配对评测完成 | 第一组创新数字 |
+| `v0.3.0-analysis` | DGTE 后 | 参数消融 + failure analysis | 报告级分析 |
+| `v1.0.0` | 后续研究完成 | 经验证的完整方法与复现实验 | 稳定版本 |
 
 Release notes 模板：
 
@@ -921,13 +1118,13 @@ WandB → 项目 → Settings → Privacy → **Public**。把 URL 进 README �
 
 ```
 [你的中文名]    📧 your.email@xxx.edu.cn    📱 [手机]
-GitHub: github.com/yourname    Blog: your-blog.com    知乎: @yourid
+GitHub: github.com/Jinfeng50    Blog / 知乎: 按实际主页补充
 ```
 
 ### 11.2 项目段落末尾加
 
 ```
-📂 github.com/yourname/openpi-libero-reproduction (★ XX | 含完整复现代码、训练曲线、SR 对比、Failure analysis、5 段 demo)
+📂 github.com/Jinfeng50/openpi-libero-reproduction（含复现代码、训练曲线、SR 结果和 DGTE A/B 评测入口）
 ```
 
 ### 11.3 HR 视角检查清单
