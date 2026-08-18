@@ -71,6 +71,18 @@ PYTHONPATH="$PERSONAL_DIR/src" uv run python "$PERSONAL_DIR/scripts/train_world_
   --output-dir "$PERSONAL_DIR/experiments/world_model_critic"
 ```
 
+Evaluate the saved critic without simulator interaction. The evaluator reuses
+the deterministic episode split, reports latent MSE, terminal/success AUROC,
+Brier score, ten-bin expected calibration error, and measured model latency:
+
+```bash
+PYTHONPATH="$PERSONAL_DIR/src" uv run python "$PERSONAL_DIR/scripts/evaluate_world_model.py" \
+  --data-dir "$PERSONAL_DIR/experiments/world_model_spatial_latents" \
+  --checkpoint "$PERSONAL_DIR/experiments/world_model_critic/critic.pt" \
+  --device cuda:4 \
+  --output-json "$PERSONAL_DIR/experiments/world_model_critic/evaluation.json"
+```
+
 The current implementation is deliberately a Stage-A sidecar. It does not yet
 alter action execution or claim a world-model control gain; that requires a
 new, paired four-suite ablation after offline predictor and calibration checks.

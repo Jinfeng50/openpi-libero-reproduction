@@ -185,6 +185,7 @@ src/openpi_libero_reproduction/world_model_data.py
                                          episode-safe latent dataset/splits
 scripts/precompute_world_latents.py      frozen visual latent extraction
 scripts/train_world_model.py             Stage-A critic training
+scripts/evaluate_world_model.py          offline critic metrics/calibration/latency
 src/openpi_libero_reproduction/          tested, openpi-independent controller
 experiments/                             CSV summaries and archived logs
 third_party/openpi, third_party/LIBERO   pinned upstream submodules
