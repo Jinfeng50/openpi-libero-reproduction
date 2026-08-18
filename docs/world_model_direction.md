@@ -45,6 +45,43 @@ by task and initial state, not by adjacent frames. Train only the latent
 predictor and reward head; report future-latent error, success calibration, and
 CPU/GPU inference latency before touching policy control.
 
+The implemented recorder writes one compressed NPZ shard per episode with a
+schema version, current/future two-view images, states, the 10-step policy
+chunk, five-step selected actions, actual executed-step count, terminal-within-
+horizon, and episode success. Start collection with:
+
+```bash
+cd "$OPENPI_DIR"
+PYTHONPATH="$PERSONAL_DIR/src:$LIBERO_DIR:$OPENPI_DIR/third_party/libero" \
+  uv run python "$PERSONAL_DIR/scripts/eval_libero_temporal.py" \
+  --task-suite-name libero_spatial --num-trials-per-task 50 \
+  --controller baseline --record-transitions "$PERSONAL_DIR/experiments/world_model_spatial"
+```
+
+Frozen ResNet18 two-view latents can then be materialized and the critic trained
+without feeding future images into the predictor:
+
+```bash
+cd "$OPENPI_DIR"
+PYTHONPATH="$PERSONAL_DIR/src" uv run python "$PERSONAL_DIR/scripts/precompute_world_latents.py" \
+  --data-dir "$PERSONAL_DIR/experiments/world_model_spatial" \
+  --output-dir "$PERSONAL_DIR/experiments/world_model_spatial_latents"
+PYTHONPATH="$PERSONAL_DIR/src" uv run python "$PERSONAL_DIR/scripts/train_world_model.py" \
+  --data-dir "$PERSONAL_DIR/experiments/world_model_spatial_latents" \
+  --output-dir "$PERSONAL_DIR/experiments/world_model_critic"
+```
+
+The current implementation is deliberately a Stage-A sidecar. It does not yet
+alter action execution or claim a world-model control gain; that requires a
+new, paired four-suite ablation after offline predictor and calibration checks.
+
+On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
+replan-boundary transitions, including both successful and failed episodes.
+The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
+the compact tracked summary is
+`experiments/world_model_stage_a_smoke.csv`. This is an implementation smoke,
+not a learned-model result or a control benchmark.
+
 ### Stage B: inference-only control
 
 Compare the same checkpoint and seed under:

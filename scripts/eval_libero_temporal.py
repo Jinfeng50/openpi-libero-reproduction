@@ -30,6 +30,7 @@ from openpi_libero_reproduction.temporal_ensemble import (  # noqa: E402
     DGTEConfig,
     DisagreementGatedTemporalEnsembler,
 )
+from openpi_libero_reproduction.transition_dataset import EpisodeTransitionRecorder  # noqa: E402
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256
@@ -50,6 +51,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dgte-decay", type=float, default=0.7)
     parser.add_argument("--dgte-disagreement-threshold", type=float, default=0.08)
     parser.add_argument("--dgte-gate-strength", type=float, default=3.0)
+    parser.add_argument(
+        "--record-transitions",
+        type=pathlib.Path,
+        default=None,
+        help="write one episode-level NPZ shard per rollout for world-model training",
+    )
     return parser.parse_args()
 
 
@@ -97,6 +104,21 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                 )
                 if controller is not None:
                     controller.reset()
+                recorder = (
+                    EpisodeTransitionRecorder(
+                        args.record_transitions,
+                        suite=args.task_suite_name,
+                        controller=args.controller,
+                        task_id=task_id,
+                        episode_idx=episode_idx,
+                        prompt=str(task_description),
+                        seed=args.seed,
+                        replan_steps=args.replan_steps,
+                    )
+                    if args.record_transitions is not None
+                    else None
+                )
+                pending_transition = None
                 replay_images: list[np.ndarray] = []
                 done = False
                 t = 0
@@ -106,27 +128,25 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                         t += 1
                         continue
 
-                    img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
-                    wrist_img = np.ascontiguousarray(obs["robot0_eye_in_hand_image"][::-1, ::-1])
-                    img = image_tools.convert_to_uint8(
-                        image_tools.resize_with_pad(img, args.resize_size, args.resize_size)
-                    )
-                    wrist_img = image_tools.convert_to_uint8(
-                        image_tools.resize_with_pad(wrist_img, args.resize_size, args.resize_size)
-                    )
+                    img, wrist_img, state = _prepare_observation(obs, args.resize_size)
                     replay_images.append(img)
 
                     if not action_plan:
+                        if pending_transition is not None:
+                            _record_transition(
+                                recorder,
+                                pending_transition,
+                                future_image=img,
+                                future_wrist_image=wrist_img,
+                                future_state=state,
+                                future_step=t,
+                                terminal_within_horizon=False,
+                            )
+                            pending_transition = None
                         element = {
                             "observation/image": img,
                             "observation/wrist_image": wrist_img,
-                            "observation/state": np.concatenate(
-                                (
-                                    obs["robot0_eef_pos"],
-                                    _quat2axisangle(obs["robot0_eef_quat"]),
-                                    obs["robot0_gripper_qpos"],
-                                )
-                            ),
+                            "observation/state": state,
                             "prompt": str(task_description),
                         }
                         action_chunk = np.asarray(client.infer(element)["actions"], dtype=np.float32)
@@ -140,14 +160,53 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                         else:
                             controller.add_chunk(action_chunk, start_step=t)
                             selected_actions = controller.next_actions(t, args.replan_steps)
+                        pending_transition = {
+                            "image": img.copy(),
+                            "wrist_image": wrist_img.copy(),
+                            "state": state.copy(),
+                            "action_chunk": action_chunk.copy(),
+                            "selected_actions": np.asarray(selected_actions, dtype=np.float32).copy(),
+                            "executed_steps": 0,
+                            "start_step": t,
+                        }
                         action_plan.extend(selected_actions)
 
                     obs, _, done, _ = env.step(action_plan.popleft().tolist())
+                    if pending_transition is not None:
+                        pending_transition["executed_steps"] += 1
                     if done:
+                        if pending_transition is not None:
+                            future_img, future_wrist_img, future_state = _prepare_observation(obs, args.resize_size)
+                            _record_transition(
+                                recorder,
+                                pending_transition,
+                                future_image=future_img,
+                                future_wrist_image=future_wrist_img,
+                                future_state=future_state,
+                                future_step=t + 1,
+                                terminal_within_horizon=True,
+                            )
+                            pending_transition = None
                         task_successes += 1
                         total_successes += 1
                         break
                     t += 1
+
+                if pending_transition is not None:
+                    future_img, future_wrist_img, future_state = _prepare_observation(obs, args.resize_size)
+                    _record_transition(
+                        recorder,
+                        pending_transition,
+                        future_image=future_img,
+                        future_wrist_image=future_wrist_img,
+                        future_state=future_state,
+                        future_step=pending_transition["start_step"] + pending_transition["executed_steps"],
+                        terminal_within_horizon=False,
+                    )
+                if recorder is not None:
+                    shard = recorder.finish(episode_success=done)
+                    if shard is not None:
+                        logging.info("Recorded transition shard: %s", shard)
 
                 task_episodes += 1
                 total_episodes += 1
@@ -187,6 +246,53 @@ def _get_libero_env(task, resolution: int, seed: int):
     )
     env.seed(seed)
     return env, task_description
+
+
+def _prepare_observation(obs: dict, resize_size: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Convert simulator images/state to the exact policy input representation."""
+
+    img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
+    wrist_img = np.ascontiguousarray(obs["robot0_eye_in_hand_image"][::-1, ::-1])
+    img = image_tools.convert_to_uint8(image_tools.resize_with_pad(img, resize_size, resize_size))
+    wrist_img = image_tools.convert_to_uint8(
+        image_tools.resize_with_pad(wrist_img, resize_size, resize_size)
+    )
+    state = np.concatenate(
+        (
+            obs["robot0_eef_pos"],
+            _quat2axisangle(obs["robot0_eef_quat"]),
+            obs["robot0_gripper_qpos"],
+        )
+    ).astype(np.float32, copy=False)
+    return img, wrist_img, state
+
+
+def _record_transition(
+    recorder: EpisodeTransitionRecorder | None,
+    pending: dict,
+    *,
+    future_image: np.ndarray,
+    future_wrist_image: np.ndarray,
+    future_state: np.ndarray,
+    future_step: int,
+    terminal_within_horizon: bool,
+) -> None:
+    if recorder is None:
+        return
+    recorder.add(
+        image=pending["image"],
+        wrist_image=pending["wrist_image"],
+        future_image=future_image,
+        future_wrist_image=future_wrist_image,
+        state=pending["state"],
+        future_state=future_state,
+        action_chunk=pending["action_chunk"],
+        selected_actions=pending["selected_actions"],
+        executed_steps=pending["executed_steps"],
+        start_step=pending["start_step"],
+        future_step=future_step,
+        terminal_within_horizon=terminal_within_horizon,
+    )
 
 
 def _quat2axisangle(quat: np.ndarray) -> np.ndarray:

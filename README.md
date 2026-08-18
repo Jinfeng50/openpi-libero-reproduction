@@ -177,6 +177,14 @@ scripts/run_temporal_ablation.sh         paired A/B runner
 scripts/run_temporal_ablation_parallel.sh eight-GPU paired A/B runner
 scripts/plot_results.py                   reproducible result figure
 docs/world_model_direction.md             staged world-model + VLA plan
+src/openpi_libero_reproduction/transition_dataset.py
+                                         episode transition recorder/schema
+src/openpi_libero_reproduction/world_model.py
+                                         frozen-encoder latent critic
+src/openpi_libero_reproduction/world_model_data.py
+                                         episode-safe latent dataset/splits
+scripts/precompute_world_latents.py      frozen visual latent extraction
+scripts/train_world_model.py             Stage-A critic training
 src/openpi_libero_reproduction/          tested, openpi-independent controller
 experiments/                             CSV summaries and archived logs
 third_party/openpi, third_party/LIBERO   pinned upstream submodules

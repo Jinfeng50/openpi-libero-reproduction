@@ -1,0 +1,2 @@
+date,run_id,suite,controller,episodes,transition_shards,transitions,success_rate,latent_encoder,critic_epochs,status
+2026-08-19,world_model_record_smoke,libero_spatial,baseline,10,10,254,0.9000,resnet18_none,1,passed
