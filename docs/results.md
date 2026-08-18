@@ -35,5 +35,15 @@ each suite.
 
 ## DGTE
 
-`baseline` and `dgte` rows will be appended only from the paired runner. No
-placeholder or unverified success rate is intentionally kept here.
+An integration smoke run used the fine-tuned `29999` checkpoint and the
+`libero_spatial` suite with one episode per task (10 episodes per controller):
+
+| Controller | Suite | Episodes | Success rate |
+|---|---|---:|---:|
+| baseline | `libero_spatial` | 10 | 1.000 |
+| DGTE | `libero_spatial` | 10 | 1.000 |
+
+This verifies the websocket client, simulator, chunk alignment, and video
+writer. It is intentionally not compared with the 50-episode headline table.
+The formal four-suite paired result will be appended only from
+`scripts/run_temporal_ablation.sh` with `N_EPISODES_PER_TASK=50`.

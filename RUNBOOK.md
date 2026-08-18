@@ -263,7 +263,7 @@ ln -sf /cfsdata/chenjinfeng/models/openpi/pi05_libero \
 cd /cfsdata/chenjinfeng/projects/openpi
 
 # 启 server（占 1 张空闲卡）
-CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py policy:checkpoint \
+CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py --port 8000 policy:checkpoint \
     --policy.config=pi05_libero \
     --policy.dir=$OPENPI_DATA_HOME/openpi-assets/checkpoints/pi05_libero
 ```
@@ -437,7 +437,7 @@ cd /cfsdata/chenjinfeng/projects/openpi
 CKPT=/cfsdata/chenjinfeng/projects/openpi/checkpoints/pi05_libero/$EXP_NAME/29999
 
 # 启 server
-CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py policy:checkpoint \
+CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py --port 8000 policy:checkpoint \
     --policy.config=pi05_libero \
     --policy.dir=$CKPT
 ```

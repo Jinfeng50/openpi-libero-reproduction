@@ -235,19 +235,26 @@ log "Port:       $SERVER_PORT"
 EVAL_GPU=$(echo $GPU_IDS | cut -d',' -f1)
 log "Server will use GPU $EVAL_GPU"
 
-CUDA_VISIBLE_DEVICES=$EVAL_GPU uv run scripts/serve_policy.py policy:checkpoint \
+CUDA_VISIBLE_DEVICES=$EVAL_GPU uv run scripts/serve_policy.py \
+    --port "$SERVER_PORT" \
+    policy:checkpoint \
     --policy.config=$CONFIG \
     --policy.dir=$EVAL_CKPT \
-    --port=$SERVER_PORT \
     > $EXP_DIR/logs/03_server.log 2>&1 &
 SERVER_PID=$!
 log "Server started, PID=$SERVER_PID"
 
 # 等 server 起来
 log "Waiting for server (max 60s)..."
+server_ready() {
+    if command -v nc >/dev/null 2>&1; then
+        nc -z -w 1 127.0.0.1 "$SERVER_PORT" >/dev/null 2>&1
+    else
+        grep -q "server listening on 0.0.0.0:$SERVER_PORT" "$EXP_DIR/logs/03_server.log"
+    fi
+}
 for i in {1..60}; do
-    if (command -v nc >/dev/null && nc -z localhost "$SERVER_PORT" 2>/dev/null) || \
-       (exec 3<>"/dev/tcp/127.0.0.1/$SERVER_PORT") 2>/dev/null; then
+    if server_ready; then
         log_ok "Server up after ${i}s"
         break
     fi

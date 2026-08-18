@@ -38,6 +38,9 @@ paired run belongs in the headline table.
 
 ## Current status
 
-The implementation and CPU unit tests are complete. The paired LIBERO result
-is pending because all eight A800 GPUs are currently occupied by other jobs;
-no DGTE improvement is claimed before the controlled run finishes.
+The implementation and CPU unit tests are complete. A real simulator smoke run
+also completed successfully on 2026-08-18: one episode per task on
+`libero_spatial` gave 10/10 for both baseline and DGTE. This is only an
+integration check, not a headline result. The four-suite, 50-episode-per-task
+paired benchmark remains pending, and no DGTE improvement is claimed before
+that controlled run finishes.

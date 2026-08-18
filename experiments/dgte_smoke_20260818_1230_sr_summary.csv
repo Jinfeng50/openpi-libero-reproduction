@@ -1,0 +1,3 @@
+date,run_id,checkpoint,controller,suite,episodes,success_rate
+2026-08-18,dgte_smoke_20260818_1230,pi05_libero_2gpu_20260610_1529/29999,baseline,libero_spatial,10,1.0000
+2026-08-18,dgte_smoke_20260818_1230,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_spatial,10,1.0000

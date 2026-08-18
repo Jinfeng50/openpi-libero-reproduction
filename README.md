@@ -38,7 +38,7 @@ episodes per suite), and seed 7. Logs and CSV files are under
 |---|---:|---:|---:|---:|---:|
 | Official pi0.5 checkpoint, reproduced | 98.2% | 98.8% | 96.8% | 92.6% | **96.60%** |
 | pi05_base -> LIBERO, 2x A800, 30k steps | 98.4% | 98.4% | 96.8% | 91.8% | **96.35%** |
-| DGTE on the fine-tuned checkpoint | pending | pending | pending | pending | pending |
+| DGTE on the fine-tuned checkpoint (formal run) | pending | pending | pending | pending | pending |
 
 The official checkpoint row is independently documented in
 [`docs/baseline.md`](docs/baseline.md). The fine-tuning row is archived in
@@ -97,10 +97,9 @@ official client. The full 50-episode protocol is recorded in
 
 ```bash
 cd "$OPENPI_DIR"
-CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py policy:checkpoint \
+CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py --port 8000 policy:checkpoint \
   --policy.config=pi05_libero \
   --policy.dir=/cfsdata/chenjinfeng/models/openpi/pi05_libero \
-  --port=8000
 
 cd "$OPENPI_DIR/examples/libero"
 uv run main.py --args.task-suite-name libero_spatial \
@@ -147,8 +146,9 @@ N_EPISODES_PER_TASK=10 \
 ```
 
 The script writes separate logs, rollout videos, and `sr_summary.csv` rows for
-both controllers. A 50-episode run is required before adding DGTE numbers to
-the main result table.
+both controllers. A one-episode-per-task Spatial smoke run passed for both
+controllers; a 50-episode run across all four suites is required before adding
+DGTE numbers to the main result table.
 
 ## Repository map
 

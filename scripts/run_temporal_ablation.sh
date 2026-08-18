@@ -4,6 +4,7 @@ set -euo pipefail
 
 OPENPI_DIR=${OPENPI_DIR:-/cfsdata/chenjinfeng/projects/openpi}
 PERSONAL_DIR=${PERSONAL_DIR:-/cfsdata/chenjinfeng/projects/openpi-libero-reproduction}
+LIBERO_DIR=${LIBERO_DIR:-/cfsdata/chenjinfeng/projects/LIBERO}
 CONFIG=${CONFIG:-pi05_libero}
 EXP_NAME=${EXP_NAME:?Set EXP_NAME to the checkpoint experiment name}
 CHECKPOINT_STEP=${CHECKPOINT_STEP:-29999}
@@ -38,7 +39,7 @@ export HF_HOME=${HF_HOME:-/cfsdata/chenjinfeng/hf_cache}
 export HF_LEROBOT_HOME=${HF_LEROBOT_HOME:-/cfsdata/chenjinfeng/datasets}
 export TMPDIR=${TMPDIR:-/cfsdata/chenjinfeng/tmp}
 export MUJOCO_GL=${MUJOCO_GL:-egl}
-export PYTHONPATH="$OPENPI_DIR/third_party/libero:$PERSONAL_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$LIBERO_DIR:$OPENPI_DIR/third_party/libero:$PERSONAL_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 
 mkdir -p "$EXP_DIR/logs" "$EXP_DIR/videos"
 SUMMARY="$EXP_DIR/sr_summary.csv"
@@ -52,18 +53,25 @@ cleanup() {
     fi
 }
 trap cleanup EXIT INT TERM
+server_ready() {
+    if command -v nc >/dev/null 2>&1; then
+        nc -z -w 1 127.0.0.1 "$SERVER_PORT" >/dev/null 2>&1
+    else
+        grep -q "server listening on 0.0.0.0:$SERVER_PORT" "$EXP_DIR/logs/server.log"
+    fi
+}
 
 cd "$OPENPI_DIR"
-CUDA_VISIBLE_DEVICES="$GPU_ID" uv run scripts/serve_policy.py policy:checkpoint \
+CUDA_VISIBLE_DEVICES="$GPU_ID" uv run scripts/serve_policy.py \
+    --port "$SERVER_PORT" \
+    policy:checkpoint \
     --policy.config="$CONFIG" \
     --policy.dir="$CKPT" \
-    --port="$SERVER_PORT" \
     > "$EXP_DIR/logs/server.log" 2>&1 &
 SERVER_PID=$!
 
 for _ in $(seq 1 120); do
-    if (command -v nc >/dev/null && nc -z localhost "$SERVER_PORT" 2>/dev/null) || \
-       (exec 3<>"/dev/tcp/127.0.0.1/$SERVER_PORT") 2>/dev/null; then
+    if server_ready; then
         break
     fi
     if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -73,8 +81,7 @@ for _ in $(seq 1 120); do
     sleep 1
 done
 
-if ! (command -v nc >/dev/null && nc -z localhost "$SERVER_PORT" 2>/dev/null) && \
-   ! (exec 3<>"/dev/tcp/127.0.0.1/$SERVER_PORT") 2>/dev/null; then
+if ! server_ready; then
     echo "Policy server did not listen on port $SERVER_PORT" >&2
     exit 1
 fi

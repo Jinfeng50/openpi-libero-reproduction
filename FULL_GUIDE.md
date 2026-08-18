@@ -452,7 +452,7 @@ export XLA_PYTHON_CLIENT_MEM_FRACTION=0.9
 
 # 选一张空卡；这里以 GPU 5 为例，运行前用 nvidia-smi 确认。
 CUDA_VISIBLE_DEVICES=5 uv run scripts/serve_policy.py \
-    --port=8001 \
+    --port 8001 \
     policy:checkpoint \
     --policy.config=pi05_libero \
     --policy.dir=/cfsdata/chenjinfeng/models/openpi/pi05_libero \
