@@ -6,7 +6,7 @@ Reproducible training and evaluation records for Physical Intelligence's
 openpi pi0.5 policy on LIBERO, plus a training-free temporal action fusion
 baseline for controlled ablations.
 
-[Results](#results) | [Reproduction](#reproduction) | [DGTE](#innovation-dgte)
+[Results](#results) | [Reproduction](#reproduction) | [DGTE](#innovation-dgte) | [World-model direction](docs/world_model_direction.md)
 
 </div>
 
@@ -51,6 +51,11 @@ WandB run: <https://wandb.ai/3267189544-uestc/openpi/runs/hwdxnlvn>.
 
 The checked-in comparison figure is generated with
 `python scripts/plot_results.py`.
+
+The next research extension is documented in
+[`docs/world_model_direction.md`](docs/world_model_direction.md): a frozen
+pi0.5 policy plus a short-horizon latent change critic and progress head. It is
+explicitly a plan until its paired LIBERO ablation is complete.
 
 ## Reproduction
 
@@ -160,7 +165,9 @@ docs/innovation.md                       DGTE design and evaluation protocol
 scripts/run_full_pipeline.sh             norm stats -> train -> serve -> eval
 scripts/eval_libero_temporal.py          baseline/DGTE LIBERO client
 scripts/run_temporal_ablation.sh         paired A/B runner
+scripts/run_temporal_ablation_parallel.sh eight-GPU paired A/B runner
 scripts/plot_results.py                   reproducible result figure
+docs/world_model_direction.md             staged world-model + VLA plan
 src/openpi_libero_reproduction/          tested, openpi-independent controller
 experiments/                             CSV summaries and archived logs
 third_party/openpi, third_party/LIBERO   pinned upstream submodules
