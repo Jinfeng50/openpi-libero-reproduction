@@ -21,8 +21,8 @@ extension:
    2x A800-80GB GPUs.
 3. DGTE (Disagreement-Gated Temporal Ensemble) is implemented as a client-side
    inference method. It fuses overlapping action chunks without changing the
-   checkpoint or requiring another training run. Its benchmark result is not
-   reported until the paired A/B evaluation has completed.
+   checkpoint or requiring another training run. Its paired four-suite
+   benchmark completed with a +0.60 percentage-point mean change.
 
 The repository does not contain model weights. Checkpoint paths in the tables
 are local archive paths from the original run; use the commands below to point
@@ -38,13 +38,22 @@ episodes per suite), and seed 7. Logs and CSV files are under
 |---|---:|---:|---:|---:|---:|
 | Official pi0.5 checkpoint, reproduced | 98.2% | 98.8% | 96.8% | 92.6% | **96.60%** |
 | pi05_base -> LIBERO, 2x A800, 30k steps | 98.4% | 98.4% | 96.8% | 91.8% | **96.35%** |
-| DGTE on the fine-tuned checkpoint (formal run) | pending | pending | pending | pending | pending |
+| Fine-tuned checkpoint, paired DGTE baseline | 96.8% | 97.6% | 96.8% | 91.8% | **95.75%** |
+| DGTE on the fine-tuned checkpoint | 97.8% | 97.6% | 96.6% | 93.4% | **96.35%** |
 
 The official checkpoint row is independently documented in
 [`docs/baseline.md`](docs/baseline.md). The fine-tuning row is archived in
 [`experiments/results.csv`](experiments/results.csv) and
 [`docs/results.md`](docs/results.md). No OOD or multimodal result is claimed in
 this repository yet.
+
+The formal paired DGTE run used 500 episodes per suite for each controller.
+The observed four-suite mean was 0.60 percentage points above its paired
+baseline, with gains on Spatial and LIBERO-10, no change on Object, and a
+0.20-point decrease on Goal. The aggregate exact McNemar test was not
+significant (`p=0.323`), so this is not evidence of a reliable overall gain.
+The tracked summary is
+[`experiments/dgte_ablation_parallel_20260818_2055_sr_summary.csv`](experiments/dgte_ablation_parallel_20260818_2055_sr_summary.csv).
 
 Training evidence is kept in [`docs/figures/`](docs/figures/) and the linked
 WandB run: <https://wandb.ai/3267189544-uestc/openpi/runs/hwdxnlvn>.
@@ -146,14 +155,14 @@ Run a paired baseline/DGTE evaluation against an existing checkpoint:
 cd "$PERSONAL_DIR"
 EXP_NAME=pi05_libero_2gpu_20260610_1529 \
 GPU_ID=5 \
-N_EPISODES_PER_TASK=10 \
+N_EPISODES_PER_TASK=50 \
 ./scripts/run_temporal_ablation.sh
 ```
 
 The script writes separate logs, rollout videos, and `sr_summary.csv` rows for
-both controllers. A one-episode-per-task Spatial smoke run passed for both
-controllers; a 50-episode run across all four suites is required before adding
-DGTE numbers to the main result table.
+both controllers. On a node with eight free GPUs, the equivalent
+`scripts/run_temporal_ablation_parallel.sh` launcher runs each independent
+controller/suite pair on its own GPU and validates the same episode counts.
 
 ## Repository map
 

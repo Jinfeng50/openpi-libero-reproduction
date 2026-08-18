@@ -35,15 +35,30 @@ each suite.
 
 ## DGTE
 
-An integration smoke run used the fine-tuned `29999` checkpoint and the
-`libero_spatial` suite with one episode per task (10 episodes per controller):
+The formal paired run used the fine-tuned `29999` checkpoint, seed 7, replan
+steps 5, 50 episodes per task, and 10 tasks per suite. Baseline and DGTE were
+evaluated independently with the same protocol:
 
-| Controller | Suite | Episodes | Success rate |
-|---|---|---:|---:|
-| baseline | `libero_spatial` | 10 | 1.000 |
-| DGTE | `libero_spatial` | 10 | 1.000 |
+| Controller | Spatial | Object | Goal | LIBERO-10 | Average |
+|---|---:|---:|---:|---:|---:|
+| baseline | 0.968 | 0.976 | 0.968 | 0.918 | **0.9575** |
+| DGTE | 0.978 | 0.976 | 0.966 | 0.934 | **0.9635** |
+| DGTE - baseline | +0.010 | 0.000 | -0.002 | +0.016 | **+0.0060** |
 
-This verifies the websocket client, simulator, chunk alignment, and video
-writer. It is intentionally not compared with the 50-episode headline table.
-The formal four-suite paired result will be appended only from
-`scripts/run_temporal_ablation.sh` with `N_EPISODES_PER_TASK=50`.
+Every controller/suite row contains 500 episodes (4,000 episodes total). The
+tracked source is
+`experiments/dgte_ablation_parallel_20260818_2055_sr_summary.csv`; full logs and
+videos remain under the corresponding ignored experiment directory. The
+observed 0.60-point mean gain is not evidence of uniform improvement: Goal
+decreased slightly and Object was unchanged.
+
+Pairing outcomes by task, initial-state index, and episode order gives 68 cases
+where baseline failed and DGTE succeeded versus 56 cases in the opposite
+direction. The two-sided exact McNemar test gives `p=0.323248`, so the aggregate
+difference is not statistically significant at 0.05. Suite-level paired counts
+are archived in
+`experiments/dgte_ablation_parallel_20260818_2055_paired_counts.csv`.
+
+The baseline values in this paired run should be used for the DGTE delta. They
+are kept separate from the earlier fine-tuning evaluation because that run
+used a different evaluator process and execution schedule.

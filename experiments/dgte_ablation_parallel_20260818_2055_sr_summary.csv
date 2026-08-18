@@ -1,0 +1,9 @@
+date,run_id,checkpoint,controller,suite,episodes,success_rate
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,baseline,libero_spatial,500,0.9680
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,baseline,libero_object,500,0.9760
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,baseline,libero_goal,500,0.9680
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,baseline,libero_10,500,0.9180
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_spatial,500,0.9780
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_object,500,0.9760
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_goal,500,0.9660
+2026-08-18,dgte_ablation_parallel_20260818_2055,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_10,500,0.9340

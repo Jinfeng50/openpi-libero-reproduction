@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the completed official-checkpoint and fine-tuning LIBERO results."""
+"""Plot the completed LIBERO baseline and DGTE results."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ def main() -> None:
     suites = ["Spatial", "Object", "Goal", "LIBERO-10"]
     official = [0.982, 0.988, 0.968, 0.926]
     finetuned = [0.984, 0.984, 0.968, 0.918]
+    paired_baseline = [0.968, 0.976, 0.968, 0.918]
+    dgte = [0.978, 0.976, 0.966, 0.934]
     csv_path = Path(__file__).resolve().parents[1] / "experiments/results.csv"
     if csv_path.exists():
         with csv_path.open(newline="") as handle:
@@ -32,9 +34,11 @@ def main() -> None:
 
     x = np.arange(len(suites))
     figure, axis = plt.subplots(figsize=(8.5, 4.8))
-    width = 0.36
-    axis.bar(x - width / 2, official, width, label="Official checkpoint reproduced", color="#4c78a8")
-    axis.bar(x + width / 2, finetuned, width, label="Full FT, 2x A800", color="#f58518")
+    width = 0.20
+    axis.bar(x - 1.5 * width, official, width, label="Official checkpoint reproduced", color="#4c78a8")
+    axis.bar(x - 0.5 * width, finetuned, width, label="Full FT, 2x A800", color="#f58518")
+    axis.bar(x + 0.5 * width, paired_baseline, width, label="Paired baseline", color="#54a24b")
+    axis.bar(x + 1.5 * width, dgte, width, label="DGTE", color="#e45756")
     axis.set_ylim(0.85, 1.0)
     axis.set_ylabel("Success rate")
     axis.set_xticks(x, suites)

@@ -1,0 +1,6 @@
+suite,paired_episodes,baseline_fail_dgte_success,baseline_success_dgte_fail,exact_mcnemar_p
+libero_spatial,500,14,9,0.404873
+libero_object,500,10,10,1.000000
+libero_goal,500,14,15,1.000000
+libero_10,500,30,22,0.331750
+aggregate,2000,68,56,0.323248

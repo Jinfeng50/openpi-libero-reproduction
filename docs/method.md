@@ -51,8 +51,10 @@ ablation. `baseline` and `dgte` are both supported by
 `scripts/eval_libero_temporal.py`; `scripts/run_temporal_ablation.sh` runs them
 against the same server and writes one CSV row per controller and suite.
 
-## Planned comparison
+## Controlled comparison
 
-DGTE results will only be added after the same checkpoint, seed, number of
-episodes, and task suites have been run for both controllers. Until then the
-result is intentionally marked `pending` in the README.
+DGTE and its baseline were evaluated with the same checkpoint, seed, number of
+episodes, task suites, and client implementation. Each controller/suite pair
+contains 500 episodes. The observed four-suite mean changed from 95.75% to
+96.35%, but the exact paired McNemar test was not significant (`p=0.323248`);
+see `docs/results.md` and the tracked CSV for suite-level values and caveats.
