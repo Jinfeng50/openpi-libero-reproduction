@@ -210,6 +210,8 @@ def main() -> None:
         "data_dir": str(args.data_dir),
         "device": args.device,
         "split_rule": "blake2b filename hash; episode shards never cross splits",
+        "latent_mse_scope": "within-representation only; latent scales may differ across encoders",
+        "latency_scope": "critic forward only on precomputed latents; visual encoder excluded",
         "splits": {},
     }
     for name in ("train", "validation", "test"):

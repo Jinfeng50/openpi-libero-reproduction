@@ -1,3 +1,3 @@
 date,run_id,representation,encoder_weights,train_episodes,val_episodes,test_episodes,test_transitions,latent_mse,terminal_auroc,success_auroc,terminal_brier,terminal_ece_10bin,success_brier,success_ece_10bin,latency_us_per_sample,notes
-2026-08-19,world_model_pilot_20260819_0740,random_resnet18,none,264,89,47,1349,0.00401435,0.853538,0.793353,0.0291453,0.0106795,0.123410,0.102545,20.2984,offline Stage-A only; frozen randomly initialized encoder
-2026-08-19,world_model_pilot_20260819_0740,imagenet_resnet18,default,264,89,47,1349,0.108535,0.955073,0.873230,0.0242485,0.0171339,0.114559,0.106626,6.36549,offline Stage-A only; torchvision ImageNet weights supplied locally
+2026-08-19,world_model_pilot_20260819_0740,random_resnet18,none,264,89,47,1349,0.00401435,0.853538,0.793353,0.0291453,0.0106795,0.123410,0.102545,20.2984,offline Stage-A only; MSE within representation; critic-only shared-GPU latency
+2026-08-19,world_model_pilot_20260819_0740,imagenet_resnet18,default,264,89,47,1349,0.108535,0.955073,0.873230,0.0242485,0.0171339,0.114559,0.106626,6.36549,offline Stage-A only; MSE within representation; critic-only shared-GPU latency

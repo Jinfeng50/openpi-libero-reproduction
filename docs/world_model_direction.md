@@ -146,10 +146,16 @@ to use ImageNet weights timed out while downloading from
 `download.pytorch.org`; no substitute was invented. After the weight file was
 provided locally, the ImageNet run completed. Test-set metrics are:
 
-| Frozen representation | Latent MSE | Terminal AUROC | Success AUROC | Success Brier | Inference |
+| Frozen representation | Latent MSE | Terminal AUROC | Success AUROC | Success Brier | Critic-only latency |
 |---|---:|---:|---:|---:|---:|
 | Randomly initialized ResNet18 | 0.00401 | 0.8535 | 0.7934 | 0.1234 | 20.30 us/sample |
 | ImageNet ResNet18 | 0.10854 | 0.9551 | 0.8732 | 0.1146 | 6.37 us/sample |
+
+Latent MSE is meaningful only within a fixed representation because feature
+scales differ across encoders; it must not be used to rank the two rows. The
+latency column measures only the critic on precomputed latents, excludes the
+ResNet encoder, and was collected on a shared GPU, so it is descriptive rather
+than a controlled systems comparison.
 
 The complete machine-readable summary is
 `experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`; the
