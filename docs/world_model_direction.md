@@ -113,6 +113,13 @@ directory. The compact tracked record is
 inference path only; it is not a paired control benchmark and does not
 establish a gain over baseline or DGTE.
 
+That simulator smoke preceded the final correction that aligns a historical
+chunk's critic input to the current absolute timestep. The corrected logic has
+passed unit tests and replay over real recorded transitions, but has not yet
+been rerun in the simulator because all eight GPUs are occupied by an existing
+training job. The smoke therefore remains interface evidence, not validation
+of the final scoring rule.
+
 The reproducible eight-GPU paired runner is
 `scripts/run_world_model_ablation_parallel.sh`. It runs baseline and
 world-model controllers with the same seed and episode protocol, records
