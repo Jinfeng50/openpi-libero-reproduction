@@ -32,6 +32,7 @@ from openpi_libero_reproduction.temporal_ensemble import (  # noqa: E402
 )
 from openpi_libero_reproduction.transition_dataset import EpisodeTransitionRecorder  # noqa: E402
 from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector  # noqa: E402
+from openpi_libero_reproduction.world_model_controller import align_action_chunk  # noqa: E402
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256
@@ -178,12 +179,16 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                             assert controller is not None and world_model_selector is not None
                             controller.add_chunk(action_chunk, start_step=t)
                             candidates = controller.chunks_covering(t)
+                            scoring_chunks = [
+                                align_action_chunk(chunk, t - source, world_model_selector.action_horizon)
+                                for source, chunk in candidates
+                            ]
                             _, scores = world_model_selector.select_chunk(
                                 image=img,
                                 wrist_image=wrist_img,
                                 state=state,
                                 prompt=str(task_description),
-                                action_chunks=[chunk for _, chunk in candidates],
+                                action_chunks=scoring_chunks,
                             )
                             selected_index = int(np.argmax(scores))
                             selected_source, selected_chunk = candidates[selected_index]

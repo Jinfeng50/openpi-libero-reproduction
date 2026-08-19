@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from scripts.evaluate_world_model import binary_auroc, calibration_metrics
-from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector
+from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector, align_action_chunk
 
 
 class WorldModelEvaluationMetricsTest(unittest.TestCase):
@@ -28,6 +28,12 @@ class WorldModelEvaluationMetricsTest(unittest.TestCase):
     def test_selector_requires_a_real_checkpoint(self):
         with self.assertRaises(FileNotFoundError):
             WorldModelActionSelector("/cfsdata/does-not-exist/critic.pt")
+
+    def test_align_action_chunk_uses_future_slice_and_tail_padding(self):
+        chunk = np.arange(70, dtype=np.float32).reshape(10, 7)
+        aligned = align_action_chunk(chunk, offset=7, horizon=5)
+        np.testing.assert_allclose(aligned[:3], chunk[7:10])
+        np.testing.assert_allclose(aligned[3:], np.repeat(chunk[9:10], 2, axis=0))
 
 
 if __name__ == "__main__":

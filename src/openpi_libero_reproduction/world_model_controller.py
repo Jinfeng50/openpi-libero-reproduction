@@ -10,6 +10,24 @@ import torch
 from .world_model import FrozenResNet18Encoder, LatentChangeCritic, hashed_text_features
 
 
+def align_action_chunk(action_chunk: np.ndarray, offset: int, horizon: int) -> np.ndarray:
+    """Align a chunk to the current timestep and pad its short tail."""
+
+    chunk = np.asarray(action_chunk, dtype=np.float32)
+    if chunk.ndim != 2 or not len(chunk) or not np.isfinite(chunk).all():
+        raise ValueError("action_chunk must have finite shape [horizon, action_dim]")
+    if isinstance(offset, bool) or not isinstance(offset, (int, np.integer)) or offset < 0:
+        raise ValueError("offset must be a non-negative integer")
+    if horizon <= 0:
+        raise ValueError("horizon must be positive")
+    if offset >= len(chunk):
+        raise ValueError("offset must point inside action_chunk")
+    aligned = chunk[int(offset) : int(offset) + horizon]
+    if len(aligned) < horizon:
+        aligned = np.concatenate((aligned, np.repeat(aligned[-1:], horizon - len(aligned), axis=0)), axis=0)
+    return np.ascontiguousarray(aligned)
+
+
 class WorldModelActionSelector:
     """Score overlapping policy chunks using only the current observation."""
 
@@ -39,6 +57,10 @@ class WorldModelActionSelector:
         self.encoder = FrozenResNet18Encoder(pretrained=encoder_weights == "default").to(device).eval()
         self.model = LatentChangeCritic(**config).to(device).eval()
         self.model.load_state_dict(payload["model"])
+
+    @property
+    def action_horizon(self) -> int:
+        return self.model.action_horizon
 
     @torch.no_grad()
     def score_chunks(
