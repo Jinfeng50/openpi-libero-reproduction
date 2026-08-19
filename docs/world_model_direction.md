@@ -219,6 +219,8 @@ metadata (`gate_accepted`, `gate_margin`, `gate_uncertainty`, and
 `gate_candidate_count`). Existing schema-1 shards remain readable because
 these fields are additive. This enables a post-hoc threshold sweep grouped by
 task and episode instead of relying only on aggregate gate counts.
+Run `scripts/analyze_gate_metadata.py` on a completed hybrid transition root to
+produce the percentile and threshold-sweep JSON.
 
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
