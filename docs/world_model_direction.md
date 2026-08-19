@@ -111,6 +111,19 @@ transition shards under the ignored `experiments/world_model_control_smoke_*`
 directory. This validates the inference path only; it is not a paired control
 benchmark and does not establish a gain over baseline or DGTE.
 
+The reproducible eight-GPU paired runner is
+`scripts/run_world_model_ablation_parallel.sh`. It runs baseline and
+world-model controllers with the same seed and episode protocol, records
+episode shards for both, and refuses to start if the local ResNet18 weight file
+is missing. Use a small pilot first:
+
+```bash
+EXP_NAME=pi05_libero_2gpu_20260610_1529 \
+WORLD_MODEL_CHECKPOINT="$PERSONAL_DIR/experiments/world_model_pilot_20260819_0740_imagenet_critic/critic.pt" \
+N_EPISODES_PER_TASK=10 \
+./scripts/run_world_model_ablation_parallel.sh
+```
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
