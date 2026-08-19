@@ -1,0 +1,2 @@
+date,run_id,status,controllers,suites,planned_episodes_per_controller,observed_shards,reason,download_failures,notes
+2026-08-19,world_model_gate_metadata_pilot_20260819_2209,incomplete,dgte|hybrid,libero_spatial|libero_goal,200,294,hybrid uv wrappers lost their Python child after partial execution and were explicitly terminated; paired keys are incomplete,none,diagnostic-only run; do not use for control success claims

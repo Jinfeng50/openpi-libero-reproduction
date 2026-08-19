@@ -222,6 +222,12 @@ task and episode instead of relying only on aggregate gate counts.
 Run `scripts/analyze_gate_metadata.py` on a completed hybrid transition root to
 produce the percentile and threshold-sweep JSON.
 
+A first metadata-enabled Spatial/Goal run was interrupted after 294 of 400
+planned shards when two `uv run` wrappers lost their evaluator child. Its
+partial data is diagnostic-only and is not used for a control claim; the
+tracked status is
+`experiments/world_model_gate_metadata_pilot_20260819_2209_status.csv`.
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
