@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 
 from scripts.evaluate_world_model import binary_auroc, calibration_metrics
+from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector
 
 
 class WorldModelEvaluationMetricsTest(unittest.TestCase):
@@ -23,6 +24,10 @@ class WorldModelEvaluationMetricsTest(unittest.TestCase):
     def test_squared_error_cannot_be_negative(self):
         errors = np.asarray([1.0, -2.0, 0.0])
         self.assertGreaterEqual(float(np.mean(errors**2)), 0.0)
+
+    def test_selector_requires_a_real_checkpoint(self):
+        with self.assertRaises(FileNotFoundError):
+            WorldModelActionSelector("/cfsdata/does-not-exist/critic.pt")
 
 
 if __name__ == "__main__":

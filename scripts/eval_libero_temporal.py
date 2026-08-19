@@ -31,6 +31,7 @@ from openpi_libero_reproduction.temporal_ensemble import (  # noqa: E402
     DisagreementGatedTemporalEnsembler,
 )
 from openpi_libero_reproduction.transition_dataset import EpisodeTransitionRecorder  # noqa: E402
+from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector  # noqa: E402
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 LIBERO_ENV_RESOLUTION = 256
@@ -47,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-trials-per-task", type=int, default=50)
     parser.add_argument("--video-out-path", default="data/libero/videos")
     parser.add_argument("--seed", type=int, default=7)
-    parser.add_argument("--controller", choices=("baseline", "dgte"), default="dgte")
+    parser.add_argument("--controller", choices=("baseline", "dgte", "world_model"), default="dgte")
     parser.add_argument("--dgte-decay", type=float, default=0.7)
     parser.add_argument("--dgte-disagreement-threshold", type=float, default=0.08)
     parser.add_argument("--dgte-gate-strength", type=float, default=3.0)
@@ -57,6 +58,10 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="write one episode-level NPZ shard per rollout for world-model training",
     )
+    parser.add_argument("--world-model-checkpoint", type=pathlib.Path, default=None)
+    parser.add_argument("--world-model-device", default="cpu")
+    parser.add_argument("--world-model-encoder-weights", choices=("default", "none"), default="default")
+    parser.add_argument("--world-model-uncertainty-penalty", type=float, default=0.1)
     return parser.parse_args()
 
 
@@ -85,6 +90,16 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
         disagreement_threshold=args.dgte_disagreement_threshold,
         gate_strength=args.dgte_gate_strength,
     )
+    world_model_selector = None
+    if args.controller == "world_model":
+        if args.world_model_checkpoint is None:
+            raise ValueError("--world-model-checkpoint is required with --controller world_model")
+        world_model_selector = WorldModelActionSelector(
+            args.world_model_checkpoint,
+            device=args.world_model_device,
+            encoder_weights=args.world_model_encoder_weights,
+            uncertainty_penalty=args.world_model_uncertainty_penalty,
+        )
 
     total_episodes = 0
     total_successes = 0
@@ -100,7 +115,9 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                 obs = env.set_init_state(initial_states[episode_idx])
                 action_plan: collections.deque[np.ndarray] = collections.deque()
                 controller = (
-                    DisagreementGatedTemporalEnsembler(dgte_config) if args.controller == "dgte" else None
+                    DisagreementGatedTemporalEnsembler(dgte_config)
+                    if args.controller in {"dgte", "world_model"}
+                    else None
                 )
                 if controller is not None:
                     controller.reset()
@@ -155,9 +172,32 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                                 f"policy returned {action_chunk.shape}; expected at least "
                                 f"{args.replan_steps} actions"
                             )
-                        if controller is None:
+                        if args.controller == "baseline":
                             selected_actions = action_chunk[: args.replan_steps]
+                        elif args.controller == "world_model":
+                            assert controller is not None and world_model_selector is not None
+                            controller.add_chunk(action_chunk, start_step=t)
+                            candidates = controller.chunks_covering(t)
+                            _, scores = world_model_selector.select_chunk(
+                                image=img,
+                                wrist_image=wrist_img,
+                                state=state,
+                                prompt=str(task_description),
+                                action_chunks=[chunk for _, chunk in candidates],
+                            )
+                            selected_index = int(np.argmax(scores))
+                            selected_source, selected_chunk = candidates[selected_index]
+                            selected_offset = t - selected_source
+                            selected_actions = selected_chunk[
+                                selected_offset : selected_offset + args.replan_steps
+                            ]
+                            if len(selected_actions) != args.replan_steps:
+                                raise RuntimeError(
+                                    "selected world-model chunk does not cover the full replan horizon"
+                                )
+                            controller.prune_before(t + args.replan_steps)
                         else:
+                            assert controller is not None
                             controller.add_chunk(action_chunk, start_step=t)
                             selected_actions = controller.next_actions(t, args.replan_steps)
                         pending_transition = {

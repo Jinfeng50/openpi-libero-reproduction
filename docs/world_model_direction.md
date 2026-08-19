@@ -83,9 +83,33 @@ PYTHONPATH="$PERSONAL_DIR/src" uv run python "$PERSONAL_DIR/scripts/evaluate_wor
   --output-json "$PERSONAL_DIR/experiments/world_model_critic/evaluation.json"
 ```
 
-The current implementation is deliberately a Stage-A sidecar. It does not yet
-alter action execution or claim a world-model control gain; that requires a
-new, paired four-suite ablation after offline predictor and calibration checks.
+The trained Stage-A critic is deliberately kept separate from the reported
+baseline and DGTE results. The optional inference-only controller below can
+alter action selection, but it does not claim a world-model control gain until
+a new, paired four-suite ablation is completed.
+
+An inference-only `world_model` controller is now available for that next
+ablation. At each real replan boundary it scores the currently overlapping full
+policy chunks using the current two-view observation, state, language, and the
+critic; it executes the selected chunk slice and never supplies future images
+to the selector. Historical chunks are aligned on the absolute simulator
+timestep before slicing.
+
+Run a small Spatial smoke against a local checkpoint with:
+
+```bash
+PYTHONPATH="$PERSONAL_DIR/src:$LIBERO_DIR:$OPENPI_DIR/third_party/libero" \
+uv run python "$PERSONAL_DIR/scripts/eval_libero_temporal.py" \
+  --task-suite-name libero_spatial --num-trials-per-task 1 \
+  --controller world_model \
+  --world-model-checkpoint "$PERSONAL_DIR/experiments/world_model_pilot_20260819_0740_imagenet_critic/critic.pt" \
+  --world-model-device cuda:1 --world-model-encoder-weights default
+```
+
+The 2026-08-19 ten-episode Spatial smoke completed at 10/10 and produced ten
+transition shards under the ignored `experiments/world_model_control_smoke_*`
+directory. This validates the inference path only; it is not a paired control
+benchmark and does not establish a gain over baseline or DGTE.
 
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.

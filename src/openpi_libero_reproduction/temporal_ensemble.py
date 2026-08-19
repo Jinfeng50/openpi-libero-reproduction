@@ -167,6 +167,27 @@ class DisagreementGatedTemporalEnsembler:
         self._chunks = [(s, c) for s, c in self._chunks if s + len(c) > cutoff]
         return result
 
+    def chunks_covering(self, step: int) -> list[tuple[int, np.ndarray]]:
+        """Return copies of all registered chunks that cover ``step``."""
+
+        if isinstance(step, bool) or not isinstance(step, (int, np.integer)):
+            raise TypeError("step must be an integer")
+        step = int(step)
+        result = []
+        for source_step, chunk in self._chunks:
+            offset = step - source_step
+            if 0 <= offset < len(chunk):
+                result.append((source_step, chunk.copy()))
+        return result
+
+    def prune_before(self, step: int) -> None:
+        """Discard chunks that cannot cover ``step`` or any later timestep."""
+
+        if isinstance(step, bool) or not isinstance(step, (int, np.integer)):
+            raise TypeError("step must be an integer")
+        step = int(step)
+        self._chunks = [(source, chunk) for source, chunk in self._chunks if source + len(chunk) > step]
+
     def _normalise_gripper_index(self) -> int:
         assert self._action_dim is not None
         index = self.config.gripper_index

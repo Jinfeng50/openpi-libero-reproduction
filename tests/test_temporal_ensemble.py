@@ -54,6 +54,27 @@ class TemporalEnsembleTest(unittest.TestCase):
             controller.action_at(0)
         np.testing.assert_allclose(controller.action_at(10), 1.0)
 
+    def test_chunks_covering_returns_copies_and_prune(self):
+        controller = DisagreementGatedTemporalEnsembler(DGTEConfig(replan_steps=5))
+        first = np.zeros((10, 7), dtype=np.float32)
+        second = np.ones((10, 7), dtype=np.float32)
+        controller.add_chunk(first, start_step=0)
+        controller.add_chunk(second, start_step=5)
+        candidates = controller.chunks_covering(5)
+        self.assertEqual([source for source, _ in candidates], [0, 5])
+        candidates[0][1][0, 0] = 99.0
+        self.assertEqual(float(controller.chunks_covering(5)[0][1][0, 0]), 0.0)
+        controller.prune_before(10)
+        self.assertEqual([source for source, _ in controller.chunks_covering(10)], [5])
+
+    def test_historical_chunk_slice_is_aligned_to_absolute_step(self):
+        controller = DisagreementGatedTemporalEnsembler(DGTEConfig(replan_steps=5))
+        chunk = np.arange(70, dtype=np.float32).reshape(10, 7)
+        controller.add_chunk(chunk, start_step=0)
+        source, stored = controller.chunks_covering(5)[0]
+        selected = stored[5 - source : 5 - source + 5]
+        np.testing.assert_allclose(selected, chunk[5:10])
+
     def test_rejects_invalid_chunk(self):
         controller = DisagreementGatedTemporalEnsembler()
         with self.assertRaises(ValueError):
