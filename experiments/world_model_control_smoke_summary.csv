@@ -1,0 +1,2 @@
+date,run_id,controller,suite,episodes,success_rate,checkpoint,encoder_weights,status,notes
+2026-08-19,world_model_control_smoke_20260819_0900,world_model,libero_spatial,10,1.0000,world_model_pilot_20260819_0740_imagenet_critic/critic.pt,default,passed,inference-path smoke only; not a paired control benchmark

@@ -67,7 +67,7 @@ class WorldModelActionSelector:
         wrist_batch = torch.from_numpy(np.repeat(np.asarray(wrist_image)[None], count, axis=0)).to(self.device)
         state_batch = torch.from_numpy(np.repeat(state[None], count, axis=0)).to(self.device)
         action_batch = torch.from_numpy(chunks).to(self.device)
-        text_batch = hashed_text_features([str(prompt)] * count).to(self.device)
+        text_batch = hashed_text_features([str(prompt)] * count, dimension=self.model.text_dim).to(self.device)
         current_latent = self.encoder(image_batch, wrist_batch)
         output = self.model(current_latent, state_batch, action_batch, text_batch)
         return self.model.score(output, uncertainty_penalty=self.uncertainty_penalty).cpu().numpy()

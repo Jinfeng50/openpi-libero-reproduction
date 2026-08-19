@@ -108,8 +108,10 @@ uv run python "$PERSONAL_DIR/scripts/eval_libero_temporal.py" \
 
 The 2026-08-19 ten-episode Spatial smoke completed at 10/10 and produced ten
 transition shards under the ignored `experiments/world_model_control_smoke_*`
-directory. This validates the inference path only; it is not a paired control
-benchmark and does not establish a gain over baseline or DGTE.
+directory. The compact tracked record is
+`experiments/world_model_control_smoke_summary.csv`. This validates the
+inference path only; it is not a paired control benchmark and does not
+establish a gain over baseline or DGTE.
 
 The reproducible eight-GPU paired runner is
 `scripts/run_world_model_ablation_parallel.sh`. It runs baseline and
