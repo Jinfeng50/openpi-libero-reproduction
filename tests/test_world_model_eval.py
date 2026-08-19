@@ -20,6 +20,10 @@ class WorldModelEvaluationMetricsTest(unittest.TestCase):
         self.assertGreaterEqual(metrics["brier"], 0.0)
         self.assertLessEqual(metrics["ece_10bin"], 1.0)
 
+    def test_squared_error_cannot_be_negative(self):
+        errors = np.asarray([1.0, -2.0, 0.0])
+        self.assertGreaterEqual(float(np.mean(errors**2)), 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

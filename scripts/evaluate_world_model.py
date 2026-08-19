@@ -117,7 +117,7 @@ def evaluate_split(model: LatentChangeCritic, loader: DataLoader | None, device:
         batch = _to_device(raw_batch, device)
         output = model(batch["current_latent"], batch["state"], batch["action_chunk"], batch["text_features"])
         latent_squared_errors.append(
-            (output.predicted_future_latent - batch["future_latent"]).detach().cpu().numpy().reshape(-1)
+            (output.predicted_future_latent - batch["future_latent"]).pow(2).detach().cpu().numpy().reshape(-1)
         )
         terminal_logits.append(output.terminal_logit.detach().cpu().numpy())
         terminal_targets.append(batch["terminal_target"].detach().cpu().numpy())

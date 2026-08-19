@@ -94,6 +94,31 @@ the compact tracked summary is
 `experiments/world_model_stage_a_smoke.csv`. This is an implementation smoke,
 not a learned-model result or a control benchmark.
 
+### Stage-A pilot result (offline only)
+
+The subsequent baseline pilot collected 100 episodes per suite (400 episodes,
+13,140 transitions) from the fine-tuned checkpoint at seed 7. The simulator
+success rates were Spatial 97%, Object 96%, Goal 95%, and LIBERO-10 91%. These
+numbers describe the data-collection rollouts, not a new policy benchmark.
+
+Two frozen ResNet18 representations were compared using the same deterministic
+episode split (264 train, 89 validation, 47 test episodes). The first attempt
+to use ImageNet weights timed out while downloading from
+`download.pytorch.org`; no substitute was invented. After the weight file was
+provided locally, the ImageNet run completed. Test-set metrics are:
+
+| Frozen representation | Latent MSE | Terminal AUROC | Success AUROC | Success Brier | Inference |
+|---|---:|---:|---:|---:|---:|
+| Randomly initialized ResNet18 | 0.00401 | 0.8535 | 0.7934 | 0.1234 | 20.30 us/sample |
+| ImageNet ResNet18 | 0.10854 | 0.9551 | 0.8732 | 0.1146 | 6.37 us/sample |
+
+The complete machine-readable summary is
+`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`; the
+full JSON reports and checkpoints remain outside Git under the corresponding
+`experiments/world_model_pilot_20260819_0740_*` directories. These are offline
+predictor/calibration measurements only. The critic has not changed action
+execution, and no world-model control gain is claimed.
+
 ### Stage B: inference-only control
 
 Compare the same checkpoint and seed under:

@@ -66,6 +66,10 @@ The next research extension is documented in
 pi0.5 policy plus a short-horizon latent change critic and progress head. It is
 explicitly a plan until its paired LIBERO ablation is complete.
 
+The completed Stage-A pilot has an offline-only summary in
+[`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`](experiments/world_model_pilot_20260819_0740_evaluation_summary.csv).
+It does not report a world-model control gain.
+
 ## Reproduction
 
 ### Environment
