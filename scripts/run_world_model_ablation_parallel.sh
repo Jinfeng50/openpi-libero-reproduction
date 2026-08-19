@@ -140,7 +140,17 @@ run_job() {
     JOB_NAMES+=("$controller/$suite")
 }
 
-declare -a SUITES=(libero_spatial libero_object libero_goal libero_10)
+read -r -a SUITES <<< "${SUITES:-libero_spatial libero_object libero_goal libero_10}"
+for suite in "${SUITES[@]}"; do
+    case "$suite" in
+        libero_spatial|libero_object|libero_goal|libero_10) ;;
+        *) echo "Unsupported suite: $suite" >&2; exit 1 ;;
+    esac
+done
+if [[ "${#SUITES[@]}" -eq 0 ]]; then
+    echo "SUITES must contain at least one suite" >&2
+    exit 1
+fi
 required_gpus=$((${#CONTROLLERS[@]} * ${#SUITES[@]}))
 if [[ "${#GPUS[@]}" -lt "$required_gpus" ]]; then
     echo "GPU_IDS must provide at least $required_gpus GPU IDs for ${#CONTROLLERS[@]} controllers (got ${#GPUS[@]})" >&2
