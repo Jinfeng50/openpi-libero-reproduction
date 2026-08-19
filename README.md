@@ -72,6 +72,16 @@ reached 94.25% (`-1.50pp`, exact paired McNemar `p=0.4050`). This is a negative
 pilot result, not evidence of a control gain; details are in
 [`experiments/world_model_ablation_pilot_20260819_0920_summary.csv`](experiments/world_model_ablation_pilot_20260819_0920_summary.csv).
 
+The critic input was then corrected to use the five actions actually executed
+before each recorded future frame (`selected_actions`), rather than the full
+ten-action policy chunk. The strict-alignment offline test improved success
+AUROC from 0.8732 to 0.8957, but a fresh 400-episode-per-controller paired
+pilot still reached 96.50% for baseline versus 95.25% for the selector
+(`-1.25pp`, exact paired McNemar `p=0.4421`). This remains a negative control
+result; the corrected critic does not establish a world-model control gain.
+The compact record is
+[`experiments/world_model_aligned_pilot_20260819_1100_summary.csv`](experiments/world_model_aligned_pilot_20260819_1100_summary.csv).
+
 The completed Stage-A pilot has an offline-only summary in
 [`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`](experiments/world_model_pilot_20260819_0740_evaluation_summary.csv).
 It does not report a world-model control gain.

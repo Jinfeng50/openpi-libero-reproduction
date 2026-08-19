@@ -1,0 +1,10 @@
+date,run_id,controller,suite,episodes,success_rate,baseline_success,world_model_success,delta_pp,both_success,baseline_only,world_model_only,both_failure,mcnemar_exact_p,notes
+2026-08-19,world_model_aligned_pilot_20260819_1100,baseline,libero_spatial,100,0.9800,98,97,-1.0,95,3,2,0,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,world_model,libero_spatial,100,0.9700,98,97,-1.0,95,3,2,0,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,baseline,libero_object,100,0.9900,99,99,0.0,98,1,1,0,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,world_model,libero_object,100,0.9900,99,99,0.0,98,1,1,0,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,baseline,libero_goal,100,0.9700,97,92,-5.0,90,7,2,1,0.1796875,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,world_model,libero_goal,100,0.9200,97,92,-5.0,90,7,2,1,0.1796875,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,baseline,libero_10,100,0.9200,92,93,1.0,87,5,6,2,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,world_model,libero_10,100,0.9300,92,93,1.0,87,5,6,2,1.0,paired pilot; selected_actions-aligned critic
+2026-08-19,world_model_aligned_pilot_20260819_1100,aggregate,aggregate,400,0.9650,386,381,-1.25,370,16,11,3,0.4420683384,paired pilot; no control gain claim

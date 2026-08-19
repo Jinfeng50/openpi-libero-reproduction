@@ -1,9 +1,9 @@
 # World Model + VLA Direction
 
 This note turns recent world-model/VLA ideas into a tractable extension of the
-current pi0.5 + LIBERO reproduction. It is a research plan, not a reported
-result. The DGTE benchmark and the existing fine-tuned checkpoint remain the
-controlled baselines.
+current pi0.5 + LIBERO reproduction. The sidecar implementation and its first
+two paired pilots are now reported here. The DGTE benchmark and the existing
+fine-tuned checkpoint remain the controlled baselines.
 
 ## What transfers from the recent papers
 
@@ -114,11 +114,11 @@ inference path only; it is not a paired control benchmark and does not
 establish a gain over baseline or DGTE.
 
 That simulator smoke preceded the final correction that aligns a historical
-chunk's critic input to the current absolute timestep. The corrected logic has
-passed unit tests and replay over real recorded transitions, but has not yet
-been rerun in the simulator because all eight GPUs are occupied by an existing
-training job. The smoke therefore remains interface evidence, not validation
-of the final scoring rule.
+chunk's critic input to the current absolute timestep. The correction also
+selects the five actions actually executed before the recorded future frame,
+instead of training on the full ten-action policy chunk. The aligned critic
+passed the unit suite, CUDA loading/smoke checks, and a fresh paired simulator
+pilot below.
 
 The reproducible eight-GPU paired runner is
 `scripts/run_world_model_ablation_parallel.sh`. It runs baseline and
@@ -155,6 +155,33 @@ first closed-loop selector. The full compact record is
 `experiments/world_model_ablation_pilot_20260819_0920_summary.csv`; raw videos,
 transition shards, and logs remain in the ignored experiment directory.
 
+### Stage-B aligned pilot result
+
+The critic was retrained with `selected_actions`, the five actions executed
+before each future observation. Its held-out test success AUROC was `0.8957`
+(versus `0.8732` for the original misaligned ImageNet critic); terminal AUROC
+was `0.9403`, success Brier was `0.1040`, and latent MSE was `0.108636`.
+These are offline predictor metrics and do not measure policy success.
+
+A fresh paired four-suite pilot used the same checkpoint, seed, task order, and
+100 episodes per task for each controller:
+
+| Suite | Baseline | World-model | Delta |
+|---|---:|---:|---:|
+| Spatial | 98% | 97% | -1pp |
+| Object | 99% | 99% | 0pp |
+| Goal | 97% | 92% | -5pp |
+| LIBERO-10 | 92% | 93% | +1pp |
+| Aggregate (400) | 96.50% | 95.25% | -1.25pp |
+
+The exact paired McNemar test was `p=0.4421` (16 baseline-only wins versus 11
+world-model-only wins). The aligned critic therefore still does not support a
+closed-loop control gain. The result is retained as a useful negative finding:
+better action/target alignment improved offline success discrimination but did
+not transfer to this inference-only chunk selector. The compact record is
+`experiments/world_model_aligned_pilot_20260819_1100_summary.csv`; raw videos,
+transition shards, and logs remain outside Git.
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
@@ -178,7 +205,8 @@ provided locally, the ImageNet run completed. Test-set metrics are:
 | Frozen representation | Latent MSE | Terminal AUROC | Success AUROC | Success Brier | Critic-only latency |
 |---|---:|---:|---:|---:|---:|
 | Randomly initialized ResNet18 | 0.00401 | 0.8535 | 0.7934 | 0.1234 | 20.30 us/sample |
-| ImageNet ResNet18 | 0.10854 | 0.9551 | 0.8732 | 0.1146 | 6.37 us/sample |
+| ImageNet ResNet18, original 10-step input | 0.10854 | 0.9551 | 0.8732 | 0.1146 | 6.37 us/sample |
+| ImageNet ResNet18, aligned 5-step input | 0.108636 | 0.9403 | 0.8957 | 0.1040 | 2.62 us/sample |
 
 Latent MSE is meaningful only within a fixed representation because feature
 scales differ across encoders; it must not be used to rank the two rows. The
@@ -186,9 +214,10 @@ latency column measures only the critic on precomputed latents, excludes the
 ResNet encoder, and was collected on a shared GPU, so it is descriptive rather
 than a controlled systems comparison.
 
-The complete machine-readable summary is
-`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`; the
-full JSON reports and checkpoints remain outside Git under the corresponding
+The complete machine-readable summaries are
+`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv` and
+`experiments/world_model_pilot_20260819_0740_aligned_evaluation_summary.csv`;
+the full JSON reports and checkpoints remain outside Git under the corresponding
 `experiments/world_model_pilot_20260819_0740_*` directories. These are offline
 predictor/calibration measurements only. The critic has not changed action
 execution, and no world-model control gain is claimed.

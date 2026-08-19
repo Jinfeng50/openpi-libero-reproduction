@@ -1,0 +1,2 @@
+date,run_id,representation,action_source,train_episodes,val_episodes,test_episodes,test_transitions,latent_mse,terminal_auroc,success_auroc,terminal_brier,success_brier,success_ece_10bin,critic_per_sample_us,notes
+2026-08-19,world_model_pilot_20260819_0740_aligned,imagenet_resnet18,selected_actions,264,89,47,1349,0.1086360,0.9402578,0.8957102,0.0268813,0.1039523,0.0943338,2.61556,offline Stage-A only; strict 5-step action alignment; critic-only shared-GPU latency
