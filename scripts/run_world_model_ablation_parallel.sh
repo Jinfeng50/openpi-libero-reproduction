@@ -10,6 +10,8 @@ EXP_NAME=${EXP_NAME:?Set EXP_NAME to the checkpoint experiment name}
 CHECKPOINT_STEP=${CHECKPOINT_STEP:-29999}
 WORLD_MODEL_CHECKPOINT=${WORLD_MODEL_CHECKPOINT:?Set WORLD_MODEL_CHECKPOINT to critic.pt}
 WORLD_MODEL_ENCODER_WEIGHTS=${WORLD_MODEL_ENCODER_WEIGHTS:-default}
+WORLD_MODEL_GATE_MARGIN=${WORLD_MODEL_GATE_MARGIN:-0.001}
+WORLD_MODEL_GATE_UNCERTAINTY=${WORLD_MODEL_GATE_UNCERTAINTY:-0.40}
 N_EPISODES_PER_TASK=${N_EPISODES_PER_TASK:-10}
 SERVER_PORT_BASE=${SERVER_PORT_BASE:-8700}
 GPU_IDS=${GPU_IDS:-"0 1 2 3 4 5 6 7"}
@@ -36,10 +38,6 @@ if [[ "$WORLD_MODEL_ENCODER_WEIGHTS" == "default" ]]; then
 fi
 
 read -r -a GPUS <<< "$GPU_IDS"
-if [[ "${#GPUS[@]}" -lt 8 ]]; then
-    echo "GPU_IDS must provide at least eight GPU IDs (got ${#GPUS[@]})" >&2
-    exit 1
-fi
 if [[ "$N_EPISODES_PER_TASK" -le 0 ]]; then
     echo "N_EPISODES_PER_TASK must be positive" >&2
     exit 1
@@ -55,6 +53,18 @@ export PYTHONPATH="$LIBERO_DIR:$OPENPI_DIR/third_party/libero:$PERSONAL_DIR/src$
 mkdir -p "$EXP_DIR/logs" "$EXP_DIR/videos" "$EXP_DIR/transitions"
 SUMMARY="$EXP_DIR/sr_summary.csv"
 echo "date,run_id,checkpoint,controller,suite,episodes,success_rate" > "$SUMMARY"
+
+read -r -a CONTROLLERS <<< "${CONTROLLERS:-baseline world_model}"
+for controller in "${CONTROLLERS[@]}"; do
+    case "$controller" in
+        baseline|dgte|world_model|hybrid) ;;
+        *) echo "Unsupported controller: $controller" >&2; exit 1 ;;
+    esac
+done
+if [[ "${#CONTROLLERS[@]}" -eq 0 ]]; then
+    echo "CONTROLLERS must contain at least one controller" >&2
+    exit 1
+fi
 
 declare -a SERVER_PIDS=()
 declare -a JOB_PIDS=()
@@ -111,12 +121,18 @@ run_job() {
             --controller "$controller"
             --record-transitions "$transition_dir"
         )
-        if [[ "$controller" == "world_model" ]]; then
+        if [[ "$controller" == "world_model" || "$controller" == "hybrid" ]]; then
             command+=(
                 --world-model-checkpoint "$WORLD_MODEL_CHECKPOINT"
                 --world-model-device "cuda:$gpu"
                 --world-model-encoder-weights "$WORLD_MODEL_ENCODER_WEIGHTS"
             )
+            if [[ "$controller" == "hybrid" ]]; then
+                command+=(
+                    --world-model-gate-margin "$WORLD_MODEL_GATE_MARGIN"
+                    --world-model-gate-uncertainty "$WORLD_MODEL_GATE_UNCERTAINTY"
+                )
+            fi
         fi
         "${command[@]}"
     ) > "$log" 2>&1 &
@@ -125,7 +141,11 @@ run_job() {
 }
 
 declare -a SUITES=(libero_spatial libero_object libero_goal libero_10)
-declare -a CONTROLLERS=(baseline world_model)
+required_gpus=$((${#CONTROLLERS[@]} * ${#SUITES[@]}))
+if [[ "${#GPUS[@]}" -lt "$required_gpus" ]]; then
+    echo "GPU_IDS must provide at least $required_gpus GPU IDs for ${#CONTROLLERS[@]} controllers (got ${#GPUS[@]})" >&2
+    exit 1
+fi
 job_index=0
 for controller in "${CONTROLLERS[@]}"; do
     for suite in "${SUITES[@]}"; do
@@ -137,8 +157,8 @@ done
 
 for index in "${!SERVER_PIDS[@]}"; do
     port=$((SERVER_PORT_BASE + index))
-    controller="${CONTROLLERS[$((index / 4))]}"
-    suite="${SUITES[$((index % 4))]}"
+    controller="${CONTROLLERS[$((index / ${#SUITES[@]}))]}"
+    suite="${SUITES[$((index % ${#SUITES[@]}))]}"
     log="$EXP_DIR/logs/server_${controller}_${suite}.log"
     ready=0
     for _ in $(seq 1 240); do
@@ -183,6 +203,12 @@ done
 
 echo "World-model paired ablation complete: $SUMMARY"
 cat "$SUMMARY"
-uv run python "$PERSONAL_DIR/scripts/analyze_world_model_ablation.py" \
-    --transition-root "$EXP_DIR/transitions" \
-    --output-csv "$EXP_DIR/paired_counts.csv"
+if [[ "${#CONTROLLERS[@]}" -eq 2 ]]; then
+    uv run python "$PERSONAL_DIR/scripts/analyze_world_model_ablation.py" \
+        --transition-root "$EXP_DIR/transitions" \
+        --baseline-controller "${CONTROLLERS[0]}" \
+        --world-model-controller "${CONTROLLERS[1]}" \
+        --output-csv "$EXP_DIR/paired_counts.csv"
+else
+    echo "Skipping paired-count analysis: expected exactly two controllers, got ${#CONTROLLERS[@]}" >&2
+fi

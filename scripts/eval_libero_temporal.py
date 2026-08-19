@@ -31,7 +31,10 @@ from openpi_libero_reproduction.temporal_ensemble import (  # noqa: E402
     DisagreementGatedTemporalEnsembler,
 )
 from openpi_libero_reproduction.transition_dataset import EpisodeTransitionRecorder  # noqa: E402
-from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector  # noqa: E402
+from openpi_libero_reproduction.world_model_controller import (  # noqa: E402
+    WorldModelActionSelector,
+    gate_world_model_choice,
+)
 from openpi_libero_reproduction.world_model_controller import align_action_chunk  # noqa: E402
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
@@ -49,7 +52,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-trials-per-task", type=int, default=50)
     parser.add_argument("--video-out-path", default="data/libero/videos")
     parser.add_argument("--seed", type=int, default=7)
-    parser.add_argument("--controller", choices=("baseline", "dgte", "world_model"), default="dgte")
+    parser.add_argument(
+        "--controller", choices=("baseline", "dgte", "world_model", "hybrid"), default="dgte"
+    )
     parser.add_argument("--dgte-decay", type=float, default=0.7)
     parser.add_argument("--dgte-disagreement-threshold", type=float, default=0.08)
     parser.add_argument("--dgte-gate-strength", type=float, default=3.0)
@@ -63,6 +68,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--world-model-device", default="cpu")
     parser.add_argument("--world-model-encoder-weights", choices=("default", "none"), default="default")
     parser.add_argument("--world-model-uncertainty-penalty", type=float, default=0.1)
+    parser.add_argument("--world-model-gate-margin", type=float, default=0.001)
+    parser.add_argument("--world-model-gate-uncertainty", type=float, default=0.40)
     return parser.parse_args()
 
 
@@ -92,9 +99,11 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
         gate_strength=args.dgte_gate_strength,
     )
     world_model_selector = None
-    if args.controller == "world_model":
+    if args.controller in {"world_model", "hybrid"}:
         if args.world_model_checkpoint is None:
-            raise ValueError("--world-model-checkpoint is required with --controller world_model")
+            raise ValueError("--world-model-checkpoint is required with --controller world_model or hybrid")
+        if args.world_model_gate_margin < 0 or args.world_model_gate_uncertainty < 0:
+            raise ValueError("world-model gate thresholds must be non-negative")
         world_model_selector = WorldModelActionSelector(
             args.world_model_checkpoint,
             device=args.world_model_device,
@@ -104,6 +113,8 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
 
     total_episodes = 0
     total_successes = 0
+    gate_attempts = 0
+    gate_accepts = 0
     for task_id in tqdm.tqdm(range(task_suite.n_tasks), desc=args.task_suite_name):
         task = task_suite.get_task(task_id)
         initial_states = task_suite.get_task_init_states(task_id)
@@ -117,7 +128,7 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                 action_plan: collections.deque[np.ndarray] = collections.deque()
                 controller = (
                     DisagreementGatedTemporalEnsembler(dgte_config)
-                    if args.controller in {"dgte", "world_model"}
+                    if args.controller in {"dgte", "world_model", "hybrid"}
                     else None
                 )
                 if controller is not None:
@@ -175,7 +186,7 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                             )
                         if args.controller == "baseline":
                             selected_actions = action_chunk[: args.replan_steps]
-                        elif args.controller == "world_model":
+                        elif args.controller in {"world_model", "hybrid"}:
                             assert controller is not None and world_model_selector is not None
                             controller.add_chunk(action_chunk, start_step=t)
                             candidates = controller.chunks_covering(t)
@@ -183,24 +194,46 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                                 align_action_chunk(chunk, t - source, world_model_selector.action_horizon)
                                 for source, chunk in candidates
                             ]
-                            _, scores = world_model_selector.select_chunk(
+                            diagnostics = world_model_selector.score_chunks_with_diagnostics(
                                 image=img,
                                 wrist_image=wrist_img,
                                 state=state,
                                 prompt=str(task_description),
                                 action_chunks=scoring_chunks,
                             )
+                            scores = diagnostics["score"]
                             selected_index = int(np.argmax(scores))
-                            selected_source, selected_chunk = candidates[selected_index]
-                            selected_offset = t - selected_source
-                            selected_actions = selected_chunk[
-                                selected_offset : selected_offset + args.replan_steps
-                            ]
-                            if len(selected_actions) != args.replan_steps:
-                                raise RuntimeError(
-                                    "selected world-model chunk does not cover the full replan horizon"
+                            use_world_model = args.controller == "world_model"
+                            if args.controller == "hybrid":
+                                accepted, margin, uncertainty = gate_world_model_choice(
+                                    scores,
+                                    diagnostics["uncertainty"],
+                                    margin_threshold=args.world_model_gate_margin,
+                                    uncertainty_threshold=args.world_model_gate_uncertainty,
                                 )
-                            controller.prune_before(t + args.replan_steps)
+                                gate_attempts += 1
+                                gate_accepts += int(accepted)
+                                use_world_model = accepted
+                                logging.debug(
+                                    "World-model gate: accepted=%s margin=%.4f uncertainty=%.4f candidates=%d",
+                                    accepted,
+                                    margin,
+                                    uncertainty,
+                                    len(candidates),
+                                )
+                            if use_world_model:
+                                selected_source, selected_chunk = candidates[selected_index]
+                                selected_offset = t - selected_source
+                                selected_actions = selected_chunk[
+                                    selected_offset : selected_offset + args.replan_steps
+                                ]
+                                if len(selected_actions) != args.replan_steps:
+                                    raise RuntimeError(
+                                        "selected world-model chunk does not cover the full replan horizon"
+                                    )
+                                controller.prune_before(t + args.replan_steps)
+                            else:
+                                selected_actions = controller.next_actions(t, args.replan_steps)
                         else:
                             assert controller is not None
                             controller.add_chunk(action_chunk, start_step=t)
@@ -278,6 +311,13 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
     logging.info("Controller: %s", args.controller)
     logging.info("Total success rate: %.4f", success_rate)
     logging.info("Total episodes: %d", total_episodes)
+    if args.controller == "hybrid":
+        logging.info(
+            "World-model gate acceptance: %.4f (%d/%d)",
+            gate_accepts / gate_attempts if gate_attempts else 0.0,
+            gate_accepts,
+            gate_attempts,
+        )
     return success_rate, total_episodes
 
 

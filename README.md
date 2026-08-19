@@ -82,6 +82,15 @@ result; the corrected critic does not establish a world-model control gain.
 The compact record is
 [`experiments/world_model_aligned_pilot_20260819_1100_summary.csv`](experiments/world_model_aligned_pilot_20260819_1100_summary.csv).
 
+As a conservative follow-up, a `DGTE + world-model` hybrid was added. The
+critic is allowed to replace DGTE only when the top score margin is at least
+`0.001` and the best candidate uncertainty is at most `0.40`; otherwise the
+controller falls back to DGTE. In a 400-episode paired pilot, DGTE reached
+97.00% and the hybrid reached 95.00% (`-2.00pp`, exact paired McNemar
+`p=0.1338`). This gate did not preserve the DGTE baseline and is recorded as
+another negative control result, not as a gain. The compact record is
+[`experiments/world_model_hybrid_smoke_20260819_1300_summary.csv`](experiments/world_model_hybrid_smoke_20260819_1300_summary.csv).
+
 The completed Stage-A pilot has an offline-only summary in
 [`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`](experiments/world_model_pilot_20260819_0740_evaluation_summary.csv).
 It does not report a world-model control gain.

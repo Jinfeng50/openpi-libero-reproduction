@@ -8,7 +8,11 @@ import torch
 
 from scripts.evaluate_world_model import binary_auroc, calibration_metrics
 from openpi_libero_reproduction.world_model import LatentChangeCritic
-from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector, align_action_chunk
+from openpi_libero_reproduction.world_model_controller import (
+    WorldModelActionSelector,
+    align_action_chunk,
+    gate_world_model_choice,
+)
 
 
 class WorldModelEvaluationMetricsTest(unittest.TestCase):
@@ -65,6 +69,34 @@ class WorldModelEvaluationMetricsTest(unittest.TestCase):
         aligned = align_action_chunk(chunk, offset=7, horizon=5)
         np.testing.assert_allclose(aligned[:3], chunk[7:10])
         np.testing.assert_allclose(aligned[3:], np.repeat(chunk[9:10], 2, axis=0))
+
+    def test_world_model_gate_requires_margin_and_low_uncertainty(self):
+        accepted, margin, uncertainty = gate_world_model_choice(
+            np.asarray([0.70, 0.75]),
+            np.asarray([0.25, 0.35]),
+            margin_threshold=0.04,
+            uncertainty_threshold=0.40,
+        )
+        self.assertTrue(accepted)
+        self.assertAlmostEqual(margin, 0.05)
+        self.assertAlmostEqual(uncertainty, 0.35)
+
+        accepted, _, _ = gate_world_model_choice(
+            np.asarray([0.70, 0.75]),
+            np.asarray([0.25, 0.45]),
+            margin_threshold=0.04,
+            uncertainty_threshold=0.40,
+        )
+        self.assertFalse(accepted)
+
+        accepted, margin, _ = gate_world_model_choice(
+            np.asarray([0.75]),
+            np.asarray([0.20]),
+            margin_threshold=0.0,
+            uncertainty_threshold=0.40,
+        )
+        self.assertFalse(accepted)
+        self.assertEqual(margin, 0.0)
 
 
 if __name__ == "__main__":

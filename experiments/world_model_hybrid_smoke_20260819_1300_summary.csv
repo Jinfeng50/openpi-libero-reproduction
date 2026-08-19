@@ -1,0 +1,10 @@
+date,run_id,controller,suite,episodes,success_rate,baseline_success,world_model_success,delta_pp,both_success,baseline_only,world_model_only,both_failure,mcnemar_exact_p,gate_acceptance,gate_accepts,gate_attempts,notes
+2026-08-19,world_model_hybrid_smoke_20260819_1300,dgte,libero_spatial,100,1.0000,100,98,-2.0,98,2,0,0,0.5,,,,paired DGTE vs hybrid pilot
+2026-08-19,world_model_hybrid_smoke_20260819_1300,hybrid,libero_spatial,100,0.9800,100,98,-2.0,98,2,0,0,0.5,0.1833,396,2160,paired DGTE vs hybrid pilot; margin>=0.001; uncertainty<=0.40
+2026-08-19,world_model_hybrid_smoke_20260819_1300,dgte,libero_object,100,0.9600,96,96,0.0,93,3,3,1,1.0,,,,paired DGTE vs hybrid pilot
+2026-08-19,world_model_hybrid_smoke_20260819_1300,hybrid,libero_object,100,0.9600,96,96,0.0,93,3,3,1,1.0,0.2916,861,2953,paired DGTE vs hybrid pilot; margin>=0.001; uncertainty<=0.40
+2026-08-19,world_model_hybrid_smoke_20260819_1300,dgte,libero_goal,100,0.9800,98,96,-2.0,95,3,1,1,0.625,,,,paired DGTE vs hybrid pilot
+2026-08-19,world_model_hybrid_smoke_20260819_1300,hybrid,libero_goal,100,0.9600,98,96,-2.0,95,3,1,1,0.625,0.3006,732,2435,paired DGTE vs hybrid pilot; margin>=0.001; uncertainty<=0.40
+2026-08-19,world_model_hybrid_smoke_20260819_1300,dgte,libero_10,100,0.9400,94,90,-4.0,87,7,3,3,0.34375,,,,paired DGTE vs hybrid pilot
+2026-08-19,world_model_hybrid_smoke_20260819_1300,hybrid,libero_10,100,0.9000,94,90,-4.0,87,7,3,3,0.34375,0.3916,2210,5643,paired DGTE vs hybrid pilot; margin>=0.001; uncertainty<=0.40
+2026-08-19,world_model_hybrid_smoke_20260819_1300,aggregate,aggregate,400,0.9700,388,380,-2.0,373,15,7,5,0.1338005066,0.3183,4199,13191,paired DGTE vs hybrid pilot; no control gain claim

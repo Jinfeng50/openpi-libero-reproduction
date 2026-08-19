@@ -133,6 +133,18 @@ N_EPISODES_PER_TASK=10 \
 ./scripts/run_world_model_ablation_parallel.sh
 ```
 
+The same runner can compare DGTE against the confidence-gated hybrid without
+changing the script:
+
+```bash
+CONTROLLERS="dgte hybrid" \
+WORLD_MODEL_CHECKPOINT="$PERSONAL_DIR/experiments/world_model_pilot_20260819_0740_imagenet_aligned_critic/critic.pt" \
+WORLD_MODEL_GATE_MARGIN=0.001 \
+WORLD_MODEL_GATE_UNCERTAINTY=0.40 \
+N_EPISODES_PER_TASK=10 \
+./scripts/run_world_model_ablation_parallel.sh
+```
+
 ### Stage-B pilot result
 
 The paired pilot completed on 2026-08-19 with 100 episodes per task on all
@@ -180,6 +192,26 @@ closed-loop control gain. The result is retained as a useful negative finding:
 better action/target alignment improved offline success discrimination but did
 not transfer to this inference-only chunk selector. The compact record is
 `experiments/world_model_aligned_pilot_20260819_1100_summary.csv`; raw videos,
+transition shards, and logs remain outside Git.
+
+### DGTE + world-model confidence gate
+
+To test whether the negative selector result came from overconfident
+interventions, the client now supports `--controller hybrid`. It computes the
+DGTE action and the world-model candidate scores at each replan boundary. The
+world-model choice is used only when the score margin is at least `0.001` and
+the best-candidate latent uncertainty is at most `0.40`; otherwise it falls
+back to DGTE. The runner exposes these thresholds through
+`WORLD_MODEL_GATE_MARGIN` and `WORLD_MODEL_GATE_UNCERTAINTY` and logs the
+acceptance count.
+
+The paired pilot used 100 episodes per task on all four suites. Gate acceptance
+was 18.3% on Spatial, 29.2% on Object, 30.1% on Goal, and 39.2% on LIBERO-10.
+DGTE reached 97.00% overall while the hybrid reached 95.00% (`-2.00pp`, exact
+paired McNemar `p=0.1338`; 15 DGTE-only wins versus 7 hybrid-only wins). The
+confidence gate therefore did not rescue the control result and is retained as
+a negative ablation. The compact record is
+`experiments/world_model_hybrid_smoke_20260819_1300_summary.csv`; raw videos,
 transition shards, and logs remain outside Git.
 
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254

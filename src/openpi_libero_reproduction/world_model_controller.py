@@ -10,6 +10,33 @@ import torch
 from .world_model import FrozenResNet18Encoder, LatentChangeCritic, hashed_text_features
 
 
+def gate_world_model_choice(
+    scores: np.ndarray,
+    uncertainty: np.ndarray,
+    *,
+    margin_threshold: float,
+    uncertainty_threshold: float,
+) -> tuple[bool, float, float]:
+    """Accept a world-model choice only with enough candidates and confidence."""
+
+    scores = np.asarray(scores, dtype=np.float32)
+    uncertainty = np.asarray(uncertainty, dtype=np.float32)
+    if scores.ndim != 1 or uncertainty.ndim != 1 or len(scores) != len(uncertainty):
+        raise ValueError("scores and uncertainty must be equal-length vectors")
+    if not len(scores) or not np.isfinite(scores).all() or not np.isfinite(uncertainty).all():
+        raise ValueError("scores and uncertainty must be non-empty and finite")
+    if margin_threshold < 0 or uncertainty_threshold < 0:
+        raise ValueError("gate thresholds must be non-negative")
+    best_index = int(np.argmax(scores))
+    best_uncertainty = float(uncertainty[best_index])
+    if len(scores) < 2:
+        return False, 0.0, best_uncertainty
+    ranked = np.sort(scores)
+    margin = float(ranked[-1] - ranked[-2])
+    accepted = margin >= margin_threshold and best_uncertainty <= uncertainty_threshold
+    return accepted, margin, best_uncertainty
+
+
 def align_action_chunk(action_chunk: np.ndarray, offset: int, horizon: int) -> np.ndarray:
     """Align a chunk to the current timestep and pad its short tail."""
 
@@ -76,6 +103,26 @@ class WorldModelActionSelector:
     ) -> np.ndarray:
         """Return one uncertainty-penalized score for each candidate chunk."""
 
+        return self.score_chunks_with_diagnostics(
+            image=image,
+            wrist_image=wrist_image,
+            state=state,
+            prompt=prompt,
+            action_chunks=action_chunks,
+        )["score"]
+
+    @torch.no_grad()
+    def score_chunks_with_diagnostics(
+        self,
+        *,
+        image: np.ndarray,
+        wrist_image: np.ndarray,
+        state: np.ndarray,
+        prompt: str,
+        action_chunks: list[np.ndarray],
+    ) -> dict[str, np.ndarray]:
+        """Return scores plus success probability and latent uncertainty."""
+
         if not action_chunks:
             raise ValueError("at least one action chunk is required")
         chunks = np.asarray(action_chunks, dtype=np.float32)
@@ -94,7 +141,14 @@ class WorldModelActionSelector:
         text_batch = hashed_text_features([str(prompt)] * count, dimension=self.model.text_dim).to(self.device)
         current_latent = self.encoder(image_batch, wrist_batch)
         output = self.model(current_latent, state_batch, action_batch, text_batch)
-        return self.model.score(output, uncertainty_penalty=self.uncertainty_penalty).cpu().numpy()
+        success_probability = torch.sigmoid(output.success_logit)
+        uncertainty = torch.exp(0.5 * output.latent_log_variance)
+        score = success_probability - self.uncertainty_penalty * uncertainty
+        return {
+            "score": score.cpu().numpy(),
+            "success_probability": success_probability.cpu().numpy(),
+            "uncertainty": uncertainty.cpu().numpy(),
+        }
 
     def select_chunk(self, **kwargs) -> tuple[int, np.ndarray]:
         scores = self.score_chunks(**kwargs)
