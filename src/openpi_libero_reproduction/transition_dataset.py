@@ -52,6 +52,10 @@ class EpisodeTransitionRecorder:
         start_step: int,
         future_step: int,
         terminal_within_horizon: bool,
+        gate_accepted: bool | None = None,
+        gate_margin: float | None = None,
+        gate_uncertainty: float | None = None,
+        gate_candidate_count: int | None = None,
     ) -> None:
         image = _validate_image("image", image)
         wrist_image = _validate_image("wrist_image", wrist_image)
@@ -77,6 +81,16 @@ class EpisodeTransitionRecorder:
             raise ValueError("executed_steps must be in [1, replan_steps]")
         if future_step - start_step != executed_steps:
             raise ValueError("future_step - start_step must equal executed_steps")
+        if gate_margin is not None and (not np.isfinite(gate_margin) or gate_margin < 0):
+            raise ValueError("gate_margin must be finite and non-negative")
+        if gate_uncertainty is not None and (not np.isfinite(gate_uncertainty) or gate_uncertainty < 0):
+            raise ValueError("gate_uncertainty must be finite and non-negative")
+        if gate_candidate_count is not None and (
+            isinstance(gate_candidate_count, bool)
+            or not isinstance(gate_candidate_count, (int, np.integer))
+            or gate_candidate_count < 0
+        ):
+            raise ValueError("gate_candidate_count must be a non-negative integer")
 
         if self._records:
             first = self._records[0]
@@ -104,6 +118,14 @@ class EpisodeTransitionRecorder:
                 "start_step": int(start_step),
                 "future_step": int(future_step),
                 "terminal_within_horizon": bool(terminal_within_horizon),
+                "gate_accepted": bool(gate_accepted) if gate_accepted is not None else False,
+                "gate_margin": float(gate_margin) if gate_margin is not None else np.nan,
+                "gate_uncertainty": float(gate_uncertainty)
+                if gate_uncertainty is not None
+                else np.nan,
+                "gate_candidate_count": int(gate_candidate_count)
+                if gate_candidate_count is not None
+                else 0,
             }
         )
 
@@ -146,6 +168,10 @@ class EpisodeTransitionRecorder:
             ("start_step", np.int32),
             ("future_step", np.int32),
             ("terminal_within_horizon", np.bool_),
+            ("gate_accepted", np.bool_),
+            ("gate_margin", np.float32),
+            ("gate_uncertainty", np.float32),
+            ("gate_candidate_count", np.int32),
         ):
             arrays[key] = np.asarray([record[key] for record in self._records], dtype=dtype)
 
@@ -206,4 +232,3 @@ def _validate_actions(name: str, value: np.ndarray) -> np.ndarray:
     if array.ndim != 2 or not array.size or not np.isfinite(array).all():
         raise ValueError(f"{name} must have finite shape [horizon, action_dim]")
     return array
-

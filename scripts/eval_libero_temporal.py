@@ -184,6 +184,10 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                                 f"policy returned {action_chunk.shape}; expected at least "
                                 f"{args.replan_steps} actions"
                             )
+                        gate_accepted = None
+                        gate_margin = None
+                        gate_uncertainty = None
+                        gate_candidate_count = None
                         if args.controller == "baseline":
                             selected_actions = action_chunk[: args.replan_steps]
                         elif args.controller in {"world_model", "hybrid"}:
@@ -213,6 +217,10 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                                 )
                                 gate_attempts += 1
                                 gate_accepts += int(accepted)
+                                gate_accepted = accepted
+                                gate_margin = margin
+                                gate_uncertainty = uncertainty
+                                gate_candidate_count = len(candidates)
                                 use_world_model = accepted
                                 logging.debug(
                                     "World-model gate: accepted=%s margin=%.4f uncertainty=%.4f candidates=%d",
@@ -246,6 +254,10 @@ def eval_libero(args: argparse.Namespace) -> tuple[float, int]:
                             "selected_actions": np.asarray(selected_actions, dtype=np.float32).copy(),
                             "executed_steps": 0,
                             "start_step": t,
+                            "gate_accepted": gate_accepted,
+                            "gate_margin": gate_margin,
+                            "gate_uncertainty": gate_uncertainty,
+                            "gate_candidate_count": gate_candidate_count,
                         }
                         action_plan.extend(selected_actions)
 
@@ -377,6 +389,10 @@ def _record_transition(
         start_step=pending["start_step"],
         future_step=future_step,
         terminal_within_horizon=terminal_within_horizon,
+        gate_accepted=pending.get("gate_accepted"),
+        gate_margin=pending.get("gate_margin"),
+        gate_uncertainty=pending.get("gate_uncertainty"),
+        gate_candidate_count=pending.get("gate_candidate_count"),
     )
 
 

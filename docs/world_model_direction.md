@@ -214,6 +214,12 @@ a negative ablation. The compact record is
 `experiments/world_model_hybrid_smoke_20260819_1300_summary.csv`; raw videos,
 transition shards, and logs remain outside Git.
 
+For the next run, transition shards also store optional per-replan gate
+metadata (`gate_accepted`, `gate_margin`, `gate_uncertainty`, and
+`gate_candidate_count`). Existing schema-1 shards remain readable because
+these fields are additive. This enables a post-hoc threshold sweep grouped by
+task and episode instead of relying only on aggregate gate counts.
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;

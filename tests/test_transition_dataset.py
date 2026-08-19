@@ -45,6 +45,8 @@ class TransitionRecorderTest(unittest.TestCase):
             self.assertEqual(shard["action_chunk"].shape, (1, 50, 7))
             self.assertTrue(bool(shard["episode_success"]))
             self.assertEqual(str(shard["prompt"]), "pick up the mug")
+            self.assertFalse(bool(shard["gate_accepted"][0]))
+            self.assertTrue(np.isnan(shard["gate_margin"][0]))
 
     def test_partial_terminal_transition(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -76,6 +78,42 @@ class TransitionRecorderTest(unittest.TestCase):
             self.assertEqual(int(shard["executed_steps"][0]), 2)
             self.assertTrue(bool(shard["terminal_within_horizon"][0]))
 
+    def test_gate_metadata_round_trip(self):
+        with tempfile.TemporaryDirectory() as directory:
+            recorder = EpisodeTransitionRecorder(
+                directory,
+                suite="libero_spatial",
+                controller="hybrid",
+                task_id=0,
+                episode_idx=0,
+                prompt="pick up the mug",
+                seed=7,
+                replan_steps=5,
+            )
+            recorder.add(
+                image=self._image(0),
+                wrist_image=self._image(0),
+                future_image=self._image(1),
+                future_wrist_image=self._image(1),
+                state=np.zeros(8),
+                future_state=np.ones(8),
+                action_chunk=np.zeros((10, 7)),
+                selected_actions=np.zeros((5, 7)),
+                executed_steps=5,
+                start_step=10,
+                future_step=15,
+                terminal_within_horizon=False,
+                gate_accepted=True,
+                gate_margin=0.012,
+                gate_uncertainty=0.31,
+                gate_candidate_count=2,
+            )
+            shard = load_episode_shard(recorder.finish(episode_success=False))
+            self.assertTrue(bool(shard["gate_accepted"][0]))
+            self.assertAlmostEqual(float(shard["gate_margin"][0]), 0.012, places=5)
+            self.assertAlmostEqual(float(shard["gate_uncertainty"][0]), 0.31, places=5)
+            self.assertEqual(int(shard["gate_candidate_count"][0]), 2)
+
     def test_rejects_inconsistent_step_alignment(self):
         recorder = EpisodeTransitionRecorder(
             pathlib.Path("/tmp/unused"),
@@ -106,4 +144,3 @@ class TransitionRecorderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
