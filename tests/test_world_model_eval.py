@@ -1,8 +1,13 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
+import torch
+
 from scripts.evaluate_world_model import binary_auroc, calibration_metrics
+from openpi_libero_reproduction.world_model import LatentChangeCritic
 from openpi_libero_reproduction.world_model_controller import WorldModelActionSelector, align_action_chunk
 
 
@@ -28,6 +33,32 @@ class WorldModelEvaluationMetricsTest(unittest.TestCase):
     def test_selector_requires_a_real_checkpoint(self):
         with self.assertRaises(FileNotFoundError):
             WorldModelActionSelector("/cfsdata/does-not-exist/critic.pt")
+
+    def test_selector_ignores_action_source_checkpoint_metadata(self):
+        model = LatentChangeCritic(
+            latent_dim=1024,
+            state_dim=8,
+            action_horizon=5,
+            action_dim=7,
+            text_dim=256,
+            hidden_dim=8,
+            dropout=0.0,
+        )
+        config = {
+            "latent_dim": 1024,
+            "state_dim": 8,
+            "action_horizon": 5,
+            "action_dim": 7,
+            "text_dim": 256,
+            "hidden_dim": 8,
+            "dropout": 0.0,
+            "action_source": "selected_actions",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            checkpoint = Path(directory) / "critic.pt"
+            torch.save({"model": model.state_dict(), "config": config}, checkpoint)
+            selector = WorldModelActionSelector(checkpoint, device="cpu", encoder_weights="none")
+            self.assertEqual(selector.action_horizon, 5)
 
     def test_align_action_chunk_uses_future_slice_and_tail_padding(self):
         chunk = np.arange(70, dtype=np.float32).reshape(10, 7)
