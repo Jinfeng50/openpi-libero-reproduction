@@ -52,6 +52,8 @@ class WorldModelActionSelector:
         config = dict(payload.get("config", {}))
         if not config:
             raise ValueError(f"world-model checkpoint has no model config: {checkpoint}")
+        # action_source is checkpoint metadata used by data/evaluation tooling, not the critic model.
+        config = {key: value for key, value in config.items() if key != "action_source"}
         self.device = device
         self.uncertainty_penalty = float(uncertainty_penalty)
         self.encoder = FrozenResNet18Encoder(pretrained=encoder_weights == "default").to(device).eval()

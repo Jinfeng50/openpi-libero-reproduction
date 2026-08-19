@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--max-files", type=int, default=None)
+    parser.add_argument("--action-source", choices=("action_chunk", "selected_actions"), default=None)
     parser.add_argument("--latency-warmup", type=int, default=10)
     parser.add_argument("--latency-repeats", type=int, default=50)
     return parser.parse_args()
@@ -85,10 +86,12 @@ def calibration_metrics(targets: np.ndarray, probabilities: np.ndarray, bins: in
     }
 
 
-def _loader(paths: list[pathlib.Path], batch_size: int, workers: int) -> DataLoader | None:
+def _loader(
+    paths: list[pathlib.Path], batch_size: int, workers: int, action_key: str
+) -> DataLoader | None:
     if not paths:
         return None
-    dataset = LatentTransitionDataset(paths)
+    dataset = LatentTransitionDataset(paths, action_key=action_key)
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -197,12 +200,17 @@ def main() -> None:
     config = dict(checkpoint.get("config", {}))
     if not config:
         raise ValueError("checkpoint does not contain a critic config")
-    model = LatentChangeCritic(**config).to(args.device)
+    action_source = args.action_source or config.get("action_source", "action_chunk")
+    if action_source not in {"action_chunk", "selected_actions"}:
+        raise ValueError(f"unsupported action source: {action_source}")
+    # action_source records dataset alignment metadata; it is not a model constructor argument.
+    model_config = {key: value for key, value in config.items() if key != "action_source"}
+    model = LatentChangeCritic(**model_config).to(args.device)
     model.load_state_dict(checkpoint["model"])
     loaders = {
-        "train": _loader(train_paths, args.batch_size, args.num_workers),
-        "validation": _loader(val_paths, args.batch_size, args.num_workers),
-        "test": _loader(test_paths, args.batch_size, args.num_workers),
+        "train": _loader(train_paths, args.batch_size, args.num_workers, action_source),
+        "validation": _loader(val_paths, args.batch_size, args.num_workers, action_source),
+        "test": _loader(test_paths, args.batch_size, args.num_workers, action_source),
     }
     split_paths = {"train": train_paths, "validation": val_paths, "test": test_paths}
     report = {
@@ -212,6 +220,7 @@ def main() -> None:
         "split_rule": "blake2b filename hash; episode shards never cross splits",
         "latent_mse_scope": "within-representation only; latent scales may differ across encoders",
         "latency_scope": "critic forward only on precomputed latents; visual encoder excluded",
+        "action_source": action_source,
         "splits": {},
     }
     for name in ("train", "validation", "test"):

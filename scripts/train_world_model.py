@@ -32,6 +32,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--max-files", type=int, default=None)
+    parser.add_argument(
+        "--action-source",
+        choices=("action_chunk", "selected_actions"),
+        default="action_chunk",
+        help="action sequence aligned with the future target",
+    )
     return parser.parse_args()
 
 
@@ -74,8 +80,8 @@ def main() -> None:
     train_paths, val_paths, test_paths = split_episode_shards(paths)
     if not train_paths:
         raise ValueError("no training shards found")
-    train = LatentTransitionDataset(train_paths)
-    val = LatentTransitionDataset(val_paths) if val_paths else None
+    train = LatentTransitionDataset(train_paths, action_key=args.action_source)
+    val = LatentTransitionDataset(val_paths, action_key=args.action_source) if val_paths else None
     sample = train[0]
     latent_dim = int(sample["current_latent"].shape[0])
     state_dim = int(sample["state"].shape[0])
@@ -119,6 +125,7 @@ def main() -> None:
                         "action_dim": action_dim,
                         "text_dim": 256,
                         "hidden_dim": args.hidden_dim,
+                        "action_source": args.action_source,
                     },
                     "train_files": [path.name for path in train_paths],
                     "val_files": [path.name for path in val_paths],

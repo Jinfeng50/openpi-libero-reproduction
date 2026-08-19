@@ -40,9 +40,18 @@ def split_episode_shards(
 class LatentTransitionDataset(Dataset):
     """Flatten precomputed episode latent shards into training examples."""
 
-    def __init__(self, paths: list[pathlib.Path], *, text_dim: int = 256) -> None:
+    def __init__(
+        self,
+        paths: list[pathlib.Path],
+        *,
+        text_dim: int = 256,
+        action_key: str = "action_chunk",
+    ) -> None:
         self.paths = list(paths)
         self.text_dim = text_dim
+        if action_key not in {"action_chunk", "selected_actions"}:
+            raise ValueError("action_key must be action_chunk or selected_actions")
+        self.action_key = action_key
         self._index: list[tuple[int, int]] = []
         self._lengths: list[int] = []
         expected_shapes: dict[str, tuple[int, ...]] | None = None
@@ -51,9 +60,11 @@ class LatentTransitionDataset(Dataset):
                 if "current_latent" not in archive or "future_latent" not in archive:
                     raise ValueError(f"latent arrays are missing from {path}")
                 length = len(archive["current_latent"])
+                if action_key not in archive:
+                    raise ValueError(f"{action_key} is missing from {path}")
                 shapes = {
                     key: tuple(archive[key].shape[1:])
-                    for key in ("current_latent", "future_latent", "state", "action_chunk")
+                    for key in ("current_latent", "future_latent", "state", action_key)
                 }
                 if expected_shapes is None:
                     expected_shapes = shapes
@@ -77,7 +88,7 @@ class LatentTransitionDataset(Dataset):
             "current_latent": torch.from_numpy(np.asarray(shard["current_latent"][row], dtype=np.float32)),
             "future_latent": torch.from_numpy(np.asarray(shard["future_latent"][row], dtype=np.float32)),
             "state": torch.from_numpy(np.asarray(shard["state"][row], dtype=np.float32)),
-            "action_chunk": torch.from_numpy(np.asarray(shard["action_chunk"][row], dtype=np.float32)),
+            "action_chunk": torch.from_numpy(np.asarray(shard[self.action_key][row], dtype=np.float32)),
             "terminal_target": torch.tensor(float(shard["terminal_within_horizon"][row])),
             "success_target": torch.tensor(float(shard["episode_success"])),
             "prompt": prompt,

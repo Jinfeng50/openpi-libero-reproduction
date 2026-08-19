@@ -57,6 +57,7 @@ def main() -> None:
         for key in (
             "state",
             "action_chunk",
+            "selected_actions",
             "terminal_within_horizon",
             "episode_success",
             "prompt",

@@ -58,6 +58,12 @@ class LatentChangeCriticTest(unittest.TestCase):
         self.assertEqual(set(first[1]) & set(first[2]), set())
         self.assertEqual(set().union(*map(set, first)), set(paths))
 
+    def test_dataset_rejects_unknown_action_source(self):
+        from openpi_libero_reproduction.world_model_data import LatentTransitionDataset
+
+        with self.assertRaises(ValueError):
+            LatentTransitionDataset([], action_key="unknown")
+
 
 if __name__ == "__main__":
     unittest.main()
