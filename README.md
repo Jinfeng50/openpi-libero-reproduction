@@ -191,6 +191,7 @@ scripts/precompute_world_latents.py      frozen visual latent extraction
 scripts/train_world_model.py             Stage-A critic training
 scripts/evaluate_world_model.py          offline critic metrics/calibration/latency
 scripts/run_world_model_ablation_parallel.sh paired baseline/world-model runner
+scripts/analyze_world_model_ablation.py     paired counts and exact McNemar test
 src/openpi_libero_reproduction/world_model_controller.py
                                          inference-only critic chunk selector
 src/openpi_libero_reproduction/          tested, openpi-independent controller

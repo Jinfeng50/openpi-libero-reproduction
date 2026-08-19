@@ -183,3 +183,6 @@ done
 
 echo "World-model paired ablation complete: $SUMMARY"
 cat "$SUMMARY"
+uv run python "$PERSONAL_DIR/scripts/analyze_world_model_ablation.py" \
+    --transition-root "$EXP_DIR/transitions" \
+    --output-csv "$EXP_DIR/paired_counts.csv"
