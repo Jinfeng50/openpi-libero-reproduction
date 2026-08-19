@@ -63,8 +63,14 @@ The checked-in comparison figure is generated with
 
 The next research extension is documented in
 [`docs/world_model_direction.md`](docs/world_model_direction.md): a frozen
-pi0.5 policy plus a short-horizon latent change critic and progress head. It is
-explicitly a plan until its paired LIBERO ablation is complete.
+pi0.5 policy plus a short-horizon latent change critic and progress head. Its
+Stage-A offline evaluation and first paired Stage-B pilot are complete.
+
+The first paired inference-only world-model pilot is now complete. Across 400
+episodes per controller, baseline reached 95.75% and the world-model selector
+reached 94.25% (`-1.50pp`, exact paired McNemar `p=0.4050`). This is a negative
+pilot result, not evidence of a control gain; details are in
+[`experiments/world_model_ablation_pilot_20260819_0920_summary.csv`](experiments/world_model_ablation_pilot_20260819_0920_summary.csv).
 
 The completed Stage-A pilot has an offline-only summary in
 [`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`](experiments/world_model_pilot_20260819_0740_evaluation_summary.csv).

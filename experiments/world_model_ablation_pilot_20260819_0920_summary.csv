@@ -1,0 +1,10 @@
+date,run_id,controller,suite,episodes,success_rate,baseline_success,world_model_success,delta_pp,both_success,baseline_only,world_model_only,both_failure,mcnemar_exact_p,notes
+2026-08-19,world_model_ablation_pilot_20260819_0920,baseline,libero_spatial,100,0.9900,99,96,-3.0,95,4,1,0,0.375,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,world_model,libero_spatial,100,0.9600,99,96,-3.0,95,4,1,0,0.375,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,baseline,libero_object,100,0.9600,96,97,1.0,93,3,4,0,1.0,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,world_model,libero_object,100,0.9700,96,97,1.0,93,3,4,0,1.0,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,baseline,libero_goal,100,0.9700,97,93,-4.0,90,7,3,0,0.34375,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,world_model,libero_goal,100,0.9300,97,93,-4.0,90,7,3,0,0.34375,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,baseline,libero_10,100,0.9100,91,91,0.0,84,7,7,2,1.0,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,world_model,libero_10,100,0.9100,91,91,0.0,84,7,7,2,1.0,paired pilot; inference-only world-model selector
+2026-08-19,world_model_ablation_pilot_20260819_0920,aggregate,aggregate,400,0.9575,383,377,-1.5,362,21,15,2,0.4050322461,paired pilot; no control gain claim

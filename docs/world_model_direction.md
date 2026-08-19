@@ -133,6 +133,28 @@ N_EPISODES_PER_TASK=10 \
 ./scripts/run_world_model_ablation_parallel.sh
 ```
 
+### Stage-B pilot result
+
+The paired pilot completed on 2026-08-19 with 100 episodes per task on all
+four suites for each controller. The same checkpoint, seed, task order, and
+episode indices were used, and the paired keys matched exactly:
+
+| Suite | Baseline | World-model | Delta |
+|---|---:|---:|---:|
+| Spatial | 99% | 96% | -3pp |
+| Object | 96% | 97% | +1pp |
+| Goal | 97% | 93% | -4pp |
+| LIBERO-10 | 91% | 91% | 0pp |
+| Aggregate (400) | 95.75% | 94.25% | -1.50pp |
+
+The exact paired McNemar test over all 400 episodes was `p=0.4050` (21
+baseline-only wins versus 15 world-model-only wins). This pilot therefore does
+not support a world-model control gain. The result is useful as a negative
+control-selection finding: strong offline AUROC did not transfer to this
+first closed-loop selector. The full compact record is
+`experiments/world_model_ablation_pilot_20260819_0920_summary.csv`; raw videos,
+transition shards, and logs remain in the ignored experiment directory.
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
