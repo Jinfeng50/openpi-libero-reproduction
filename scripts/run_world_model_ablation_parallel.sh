@@ -13,6 +13,7 @@ WORLD_MODEL_ENCODER_WEIGHTS=${WORLD_MODEL_ENCODER_WEIGHTS:-default}
 WORLD_MODEL_GATE_MARGIN=${WORLD_MODEL_GATE_MARGIN:-0.001}
 WORLD_MODEL_GATE_UNCERTAINTY=${WORLD_MODEL_GATE_UNCERTAINTY:-0.40}
 N_EPISODES_PER_TASK=${N_EPISODES_PER_TASK:-10}
+JOB_TIMEOUT_SECONDS=${JOB_TIMEOUT_SECONDS:-7200}
 SERVER_PORT_BASE=${SERVER_PORT_BASE:-8700}
 GPU_IDS=${GPU_IDS:-"0 1 2 3 4 5 6 7"}
 RUN_ID=${RUN_ID:-world_model_ablation_parallel_$(date +%Y%m%d_%H%M)}
@@ -40,6 +41,10 @@ fi
 read -r -a GPUS <<< "$GPU_IDS"
 if [[ "$N_EPISODES_PER_TASK" -le 0 ]]; then
     echo "N_EPISODES_PER_TASK must be positive" >&2
+    exit 1
+fi
+if [[ "$JOB_TIMEOUT_SECONDS" -le 0 ]]; then
+    echo "JOB_TIMEOUT_SECONDS must be positive" >&2
     exit 1
 fi
 
@@ -71,10 +76,18 @@ declare -a JOB_PIDS=()
 declare -a JOB_NAMES=()
 cleanup() {
     local pid
+    for pid in "${JOB_PIDS[@]:-}"; do
+        if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done
     for pid in "${SERVER_PIDS[@]:-}"; do
         if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
             kill "$pid" 2>/dev/null || true
         fi
+    done
+    for pid in "${JOB_PIDS[@]:-}"; do
+        [[ -n "$pid" ]] && wait "$pid" 2>/dev/null || true
     done
     for pid in "${SERVER_PIDS[@]:-}"; do
         [[ -n "$pid" ]] && wait "$pid" 2>/dev/null || true
@@ -134,7 +147,9 @@ run_job() {
                 )
             fi
         fi
-        "${command[@]}"
+        # A failed evaluator must not leave an orphaned uv wrapper blocking the
+        # paired runner forever. The timeout is per controller/suite job.
+        exec timeout --foreground --signal=TERM --kill-after=30 "$JOB_TIMEOUT_SECONDS" "${command[@]}"
     ) > "$log" 2>&1 &
     JOB_PIDS+=("$!")
     JOB_NAMES+=("$controller/$suite")
