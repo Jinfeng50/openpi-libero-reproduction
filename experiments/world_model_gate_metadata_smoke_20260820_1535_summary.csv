@@ -1,0 +1,6 @@
+date,run_id,controller,suite,episodes,success_rate,baseline_success,hybrid_success,delta_pp,both_success,baseline_only,hybrid_only,both_failure,mcnemar_exact_p,gate_acceptance,gate_accepts,gate_attempts,notes
+2026-08-20,world_model_gate_metadata_smoke_20260820_1535,dgte,libero_spatial,20,1.0000,20,20,0.0,20,0,0,0,1.0,,,,interface smoke; not a benchmark
+2026-08-20,world_model_gate_metadata_smoke_20260820_1535,hybrid,libero_spatial,20,1.0000,20,20,0.0,20,0,0,0,1.0,0.0458,20,437,interface smoke; margin>=0.001; uncertainty<=0.30
+2026-08-20,world_model_gate_metadata_smoke_20260820_1535,dgte,libero_goal,20,0.9000,18,19,5.0,18,0,1,1,1.0,,,,interface smoke; not a benchmark
+2026-08-20,world_model_gate_metadata_smoke_20260820_1535,hybrid,libero_goal,20,0.9500,18,19,5.0,18,0,1,1,1.0,0.0448,22,491,interface smoke; margin>=0.001; uncertainty<=0.30
+2026-08-20,world_model_gate_metadata_smoke_20260820_1535,aggregate,aggregate,40,0.9500,38,39,2.5,38,0,1,1,1.0,0.0453,42,928,interface smoke; no control gain claim

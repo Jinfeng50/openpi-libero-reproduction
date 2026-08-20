@@ -228,6 +228,13 @@ partial data is diagnostic-only and is not used for a control claim; the
 tracked status is
 `experiments/world_model_gate_metadata_pilot_20260819_2209_status.csv`.
 
+After hardening the runner with per-job timeouts and evaluator cleanup, a
+16-episode-per-controller Spatial/Goal smoke completed cleanly. The hybrid
+accepted the world-model choice on 4.5% of replan boundaries and achieved
+39/40 successes versus DGTE's 38/40; this is an interface smoke with only 40
+paired episodes (`p=1.0`), not evidence of a control gain. The compact record
+is `experiments/world_model_gate_metadata_smoke_20260820_1535_summary.csv`.
+
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.
 The episode shards, latent extraction, and one-epoch CPU critic fit all passed;
