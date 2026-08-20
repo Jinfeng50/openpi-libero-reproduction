@@ -16,7 +16,13 @@ import numpy as np
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--transition-root", type=pathlib.Path, required=True)
+    parser.add_argument(
+        "--transition-root",
+        type=pathlib.Path,
+        nargs="+",
+        required=True,
+        help="one or more transition roots to merge before analysis",
+    )
     parser.add_argument("--controller", default="hybrid")
     parser.add_argument("--output-json", type=pathlib.Path, default=None)
     parser.add_argument("--margins", type=float, nargs="+", default=[0.001, 0.002, 0.005, 0.01, 0.02])
@@ -66,6 +72,16 @@ def load_gate_rows(directory: pathlib.Path) -> tuple[list[dict], int]:
     return rows, metadata_shards
 
 
+def merge_gate_rows(directories: list[pathlib.Path], controller: str) -> tuple[list[dict], int]:
+    rows: list[dict] = []
+    metadata_shards = 0
+    for directory in directories:
+        directory_rows, directory_shards = load_gate_rows(directory / controller)
+        rows.extend(directory_rows)
+        metadata_shards += directory_shards
+    return rows, metadata_shards
+
+
 def sweep_gate_thresholds(
     rows: list[dict], margins: list[float], uncertainties: list[float]
 ) -> list[dict[str, float | int | str | None]]:
@@ -112,7 +128,7 @@ def build_report(
 
 def main() -> None:
     args = parse_args()
-    rows, metadata_shards = load_gate_rows(args.transition_root / args.controller)
+    rows, metadata_shards = merge_gate_rows(args.transition_root, args.controller)
     report = build_report(rows, metadata_shards, args.margins, args.uncertainties)
     rendered = json.dumps(report, indent=2, sort_keys=True, allow_nan=False)
     print(rendered)

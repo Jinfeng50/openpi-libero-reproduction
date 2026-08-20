@@ -95,6 +95,20 @@ The completed Stage-A pilot has an offline-only summary in
 [`experiments/world_model_pilot_20260819_0740_evaluation_summary.csv`](experiments/world_model_pilot_20260819_0740_evaluation_summary.csv).
 It does not report a world-model control gain.
 
+The full metadata-enabled DGTE + hybrid run completed on 2026-08-20 with 100
+paired episodes per task on all four suites (400 episodes per controller).
+DGTE reached 97.25% (389/400) and the hybrid reached 98.25% (393/400), a
+paired change of +1.00 percentage point (`p=0.3876953125`, exact McNemar).
+The suite rows were Spatial 98% -> 100%, Object 99% -> 99%, Goal 99% ->
+100%, and LIBERO-10 93% -> 94%. This is not statistically significant and is
+reported as a controlled result, not a claimed gain. The tracked summaries
+are [`experiments/world_model_gate_full_20260820_four_suite_sr_summary.csv`](experiments/world_model_gate_full_20260820_four_suite_sr_summary.csv)
+and [`experiments/world_model_gate_full_20260820_four_suite_paired_counts.csv`](experiments/world_model_gate_full_20260820_four_suite_paired_counts.csv).
+At the configured margin/uncertainty gate (`0.001`/`0.30`), 1,258 of 12,788
+recorded candidate transitions were accepted (9.84%). Accepted-transition
+success is observational rather than a counterfactual estimate; the full
+threshold sweep is in [`experiments/world_model_gate_full_20260820_four_suite_gate_metadata.json`](experiments/world_model_gate_full_20260820_four_suite_gate_metadata.json).
+
 ## Reproduction
 
 ### Environment

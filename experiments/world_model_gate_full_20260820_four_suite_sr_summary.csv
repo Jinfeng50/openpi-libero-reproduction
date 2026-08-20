@@ -1,0 +1,9 @@
+date,run_id,checkpoint,controller,suite,episodes,success_rate
+2026-08-20,world_model_gate_full_20260820_spatial_object,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_spatial,100,0.9800
+2026-08-20,world_model_gate_full_20260820_spatial_object,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_object,100,0.9900
+2026-08-20,world_model_gate_full_20260820_spatial_object,pi05_libero_2gpu_20260610_1529/29999,hybrid,libero_spatial,100,1.0000
+2026-08-20,world_model_gate_full_20260820_spatial_object,pi05_libero_2gpu_20260610_1529/29999,hybrid,libero_object,100,0.9900
+2026-08-20,world_model_gate_full_20260820_goal_10,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_goal,100,0.9900
+2026-08-20,world_model_gate_full_20260820_goal_10,pi05_libero_2gpu_20260610_1529/29999,dgte,libero_10,100,0.9300
+2026-08-20,world_model_gate_full_20260820_goal_10,pi05_libero_2gpu_20260610_1529/29999,hybrid,libero_goal,100,1.0000
+2026-08-20,world_model_gate_full_20260820_goal_10,pi05_libero_2gpu_20260610_1529/29999,hybrid,libero_10,100,0.9400

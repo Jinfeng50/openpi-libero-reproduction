@@ -1,0 +1,187 @@
+{
+  "gate_transition_count": 12788,
+  "interpretation": "accepted-transition success is observational and not counterfactual",
+  "margin_percentiles": {
+    "p0": 0.0,
+    "p100": 0.32655662298202515,
+    "p25": 0.00014434754848480225,
+    "p50": 0.00045683979988098145,
+    "p75": 0.0016503185033798218,
+    "p90": 0.006017631292343153,
+    "p95": 0.013712570071220393,
+    "p99": 0.07059724815189795
+  },
+  "metadata_shards": 400,
+  "threshold_sweep": [
+    {
+      "acceptance_rate": 0.09837347513293714,
+      "accepted_transition_success_rate": 0.8028616852146264,
+      "accepted_transitions": 1258,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.001,
+      "uncertainty_threshold": 0.3
+    },
+    {
+      "acceptance_rate": 0.2207538317172349,
+      "accepted_transition_success_rate": 0.8653914275593341,
+      "accepted_transitions": 2823,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.001,
+      "uncertainty_threshold": 0.35
+    },
+    {
+      "acceptance_rate": 0.29942133249921804,
+      "accepted_transition_success_rate": 0.8861321493862627,
+      "accepted_transitions": 3829,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.001,
+      "uncertainty_threshold": 0.4
+    },
+    {
+      "acceptance_rate": 0.3285111041601501,
+      "accepted_transition_success_rate": 0.8959771482980243,
+      "accepted_transitions": 4201,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.001,
+      "uncertainty_threshold": 0.45
+    },
+    {
+      "acceptance_rate": 0.07381920550516109,
+      "accepted_transition_success_rate": 0.788135593220339,
+      "accepted_transitions": 944,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.002,
+      "uncertainty_threshold": 0.3
+    },
+    {
+      "acceptance_rate": 0.15373787926180796,
+      "accepted_transition_success_rate": 0.8509664292980671,
+      "accepted_transitions": 1966,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.002,
+      "uncertainty_threshold": 0.35
+    },
+    {
+      "acceptance_rate": 0.20331560838285892,
+      "accepted_transition_success_rate": 0.8676923076923077,
+      "accepted_transitions": 2600,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.002,
+      "uncertainty_threshold": 0.4
+    },
+    {
+      "acceptance_rate": 0.22012824522990304,
+      "accepted_transition_success_rate": 0.8774422735346359,
+      "accepted_transitions": 2815,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.002,
+      "uncertainty_threshold": 0.45
+    },
+    {
+      "acceptance_rate": 0.045276822020644356,
+      "accepted_transition_success_rate": 0.772020725388601,
+      "accepted_transitions": 579,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.005,
+      "uncertainty_threshold": 0.3
+    },
+    {
+      "acceptance_rate": 0.08429777916796997,
+      "accepted_transition_success_rate": 0.8330241187384044,
+      "accepted_transitions": 1078,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.005,
+      "uncertainty_threshold": 0.35
+    },
+    {
+      "acceptance_rate": 0.10760087582108227,
+      "accepted_transition_success_rate": 0.8473837209302325,
+      "accepted_transitions": 1376,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.005,
+      "uncertainty_threshold": 0.4
+    },
+    {
+      "acceptance_rate": 0.11495151704723178,
+      "accepted_transition_success_rate": 0.8571428571428571,
+      "accepted_transitions": 1470,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.005,
+      "uncertainty_threshold": 0.45
+    },
+    {
+      "acceptance_rate": 0.02877697841726619,
+      "accepted_transition_success_rate": 0.779891304347826,
+      "accepted_transitions": 368,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.01,
+      "uncertainty_threshold": 0.3
+    },
+    {
+      "acceptance_rate": 0.0490303409446356,
+      "accepted_transition_success_rate": 0.8309409888357256,
+      "accepted_transitions": 627,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.01,
+      "uncertainty_threshold": 0.35
+    },
+    {
+      "acceptance_rate": 0.0613856740694401,
+      "accepted_transition_success_rate": 0.8356687898089172,
+      "accepted_transitions": 785,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.01,
+      "uncertainty_threshold": 0.4
+    },
+    {
+      "acceptance_rate": 0.06490459806068188,
+      "accepted_transition_success_rate": 0.844578313253012,
+      "accepted_transitions": 830,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.01,
+      "uncertainty_threshold": 0.45
+    },
+    {
+      "acceptance_rate": 0.01595245542696278,
+      "accepted_transition_success_rate": 0.7598039215686274,
+      "accepted_transitions": 204,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.02,
+      "uncertainty_threshold": 0.3
+    },
+    {
+      "acceptance_rate": 0.02658742571160463,
+      "accepted_transition_success_rate": 0.8235294117647058,
+      "accepted_transitions": 340,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.02,
+      "uncertainty_threshold": 0.35
+    },
+    {
+      "acceptance_rate": 0.03190491085392556,
+      "accepted_transition_success_rate": 0.8112745098039216,
+      "accepted_transitions": 408,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.02,
+      "uncertainty_threshold": 0.4
+    },
+    {
+      "acceptance_rate": 0.03276509227400688,
+      "accepted_transition_success_rate": 0.8162291169451074,
+      "accepted_transitions": 419,
+      "interpretation": "observational transition rate; not a counterfactual policy estimate",
+      "margin_threshold": 0.02,
+      "uncertainty_threshold": 0.45
+    }
+  ],
+  "uncertainty_percentiles": {
+    "p0": 0.16261111199855804,
+    "p100": 0.5502673983573914,
+    "p25": 0.30553778260946274,
+    "p50": 0.33706600964069366,
+    "p75": 0.37136210501194,
+    "p90": 0.4053467690944672,
+    "p95": 0.4269275233149529,
+    "p99": 0.4616299188137053
+  }
+}

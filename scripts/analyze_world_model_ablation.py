@@ -14,7 +14,13 @@ import numpy as np
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--transition-root", type=pathlib.Path, required=True)
+    parser.add_argument(
+        "--transition-root",
+        type=pathlib.Path,
+        nargs="+",
+        required=True,
+        help="one or more transition roots to merge before pairing",
+    )
     parser.add_argument("--output-csv", type=pathlib.Path, default=None)
     parser.add_argument("--baseline-controller", default="baseline")
     parser.add_argument("--world-model-controller", default="world_model")
@@ -51,6 +57,16 @@ def load_outcomes(directory: pathlib.Path) -> dict[tuple[str, int, int, int], bo
                 raise ValueError(f"duplicate episode key {key} in {directory}")
             outcomes[key] = bool(archive["episode_success"])
     return outcomes
+
+
+def merge_outcomes(directories: list[pathlib.Path], controller: str) -> dict[tuple[str, int, int, int], bool]:
+    merged: dict[tuple[str, int, int, int], bool] = {}
+    for directory in directories:
+        for key, value in load_outcomes(directory / controller).items():
+            if key in merged:
+                raise ValueError(f"duplicate episode key {key} across transition roots")
+            merged[key] = value
+    return merged
 
 
 def paired_rows(baseline: dict, world_model: dict) -> list[dict]:
@@ -90,8 +106,8 @@ def paired_rows(baseline: dict, world_model: dict) -> list[dict]:
 
 def main() -> None:
     args = parse_args()
-    baseline = load_outcomes(args.transition_root / args.baseline_controller)
-    world_model = load_outcomes(args.transition_root / args.world_model_controller)
+    baseline = merge_outcomes(args.transition_root, args.baseline_controller)
+    world_model = merge_outcomes(args.transition_root, args.world_model_controller)
     rows = paired_rows(baseline, world_model)
     fieldnames = list(rows[0])
     if args.output_csv is not None:

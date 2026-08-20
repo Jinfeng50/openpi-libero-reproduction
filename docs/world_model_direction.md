@@ -219,8 +219,8 @@ metadata (`gate_accepted`, `gate_margin`, `gate_uncertainty`, and
 `gate_candidate_count`). Existing schema-1 shards remain readable because
 these fields are additive. This enables a post-hoc threshold sweep grouped by
 task and episode instead of relying only on aggregate gate counts.
-Run `scripts/analyze_gate_metadata.py` on a completed hybrid transition root to
-produce the percentile and threshold-sweep JSON.
+Run `scripts/analyze_gate_metadata.py` on one or more completed hybrid
+transition roots to produce the merged percentile and threshold-sweep JSON.
 
 A first metadata-enabled Spatial/Goal run was interrupted after 294 of 400
 planned shards when two `uv run` wrappers lost their evaluator child. Its
@@ -234,6 +234,34 @@ accepted the world-model choice on 4.5% of replan boundaries and achieved
 39/40 successes versus DGTE's 38/40; this is an interface smoke with only 40
 paired episodes (`p=1.0`), not evidence of a control gain. The compact record
 is `experiments/world_model_gate_metadata_smoke_20260820_1535_summary.csv`.
+
+### Full metadata-enabled gate result
+
+The hardened runner then completed two four-way batches without touching the
+user-owned process on GPU2: Spatial/Object in
+`world_model_gate_full_20260820_spatial_object` and Goal/LIBERO-10 in
+`world_model_gate_full_20260820_goal_10`. Each batch used DGTE and the hybrid
+controller with the same seed, task order, checkpoint, and 100 episodes per
+suite. The merged result is:
+
+| Suite | DGTE | Hybrid | Delta |
+|---|---:|---:|---:|
+| Spatial | 98/100 | 100/100 | +2pp |
+| Object | 99/100 | 99/100 | 0pp |
+| Goal | 99/100 | 100/100 | +1pp |
+| LIBERO-10 | 93/100 | 94/100 | +1pp |
+| Aggregate (400) | 389/400 (97.25%) | 393/400 (98.25%) | +1pp |
+
+The paired exact McNemar test is `p=0.3876953125` (4 DGTE-only wins versus 8
+hybrid-only wins), so this result does not establish a statistically reliable
+control gain. The configured gate accepted 1,258 of 12,788 candidate
+transitions (9.84%) across the four suites. Acceptance by suite was 4.10%
+(Spatial), 7.54% (Object), 6.20% (Goal), and 14.89% (LIBERO-10). These are
+transition-level observational rates; accepted-transition success is not a
+counterfactual estimate of the DGTE action. The merged machine-readable files
+are `experiments/world_model_gate_full_20260820_four_suite_sr_summary.csv`,
+`experiments/world_model_gate_full_20260820_four_suite_paired_counts.csv`, and
+`experiments/world_model_gate_full_20260820_four_suite_gate_metadata.json`.
 
 On 2026-08-19, a real simulator smoke collected 10 Spatial episodes and 254
 replan-boundary transitions, including both successful and failed episodes.

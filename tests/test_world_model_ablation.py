@@ -1,7 +1,11 @@
 import unittest
+import tempfile
+from pathlib import Path
 
-from scripts.analyze_world_model_ablation import exact_mcnemar_p, paired_rows
-from scripts.analyze_gate_metadata import sweep_gate_thresholds
+import numpy as np
+
+from scripts.analyze_world_model_ablation import exact_mcnemar_p, merge_outcomes, paired_rows
+from scripts.analyze_gate_metadata import merge_gate_rows, sweep_gate_thresholds
 
 
 class WorldModelAblationAnalysisTest(unittest.TestCase):
@@ -36,6 +40,30 @@ class WorldModelAblationAnalysisTest(unittest.TestCase):
         self.assertEqual(result["acceptance_rate"], 0.5)
         self.assertEqual(result["accepted_transition_success_rate"], 1.0)
         self.assertIn("observational", result["interpretation"])
+
+    def test_multiple_transition_roots_merge_without_duplicate_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index, success in enumerate((True, False)):
+                for controller in ("baseline", "hybrid"):
+                    target = root / f"run_{index}" / controller
+                    target.mkdir(parents=True)
+                    np.savez_compressed(
+                        target / f"episode_{index}.npz",
+                        suite=np.asarray("suite"),
+                        task_id=np.asarray(0),
+                        episode_idx=np.asarray(index),
+                        seed=np.asarray(7),
+                        episode_success=np.asarray(success),
+                        gate_margin=np.asarray([0.001]),
+                        gate_uncertainty=np.asarray([0.30]),
+                        gate_candidate_count=np.asarray([1]),
+                    )
+            baseline = merge_outcomes([root / "run_0", root / "run_1"], "baseline")
+            self.assertEqual(len(baseline), 2)
+            rows, metadata_shards = merge_gate_rows([root / "run_0", root / "run_1"], "hybrid")
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(metadata_shards, 2)
 
 
 if __name__ == "__main__":
